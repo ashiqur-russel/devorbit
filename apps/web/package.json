@@ -1,0 +1,35 @@
+{
+  "name": "@devorbit/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@devorbit/types": "workspace:*",
+    "next": "^15.1.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "next-auth": "^5.0.0-beta.25",
+    "socket.io-client": "^4.8.1",
+    "@tanstack/react-query": "^5.67.2",
+    "zustand": "^5.0.3",
+    "recharts": "^2.15.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "typescript": "^5.8.3",
+    "tailwindcss": "^4.0.7",
+    "@tailwindcss/postcss": "^4.0.7",
+    "postcss": "^8.5.2"
+  }
+}
