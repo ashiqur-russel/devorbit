@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DevOrbit — Agent Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:        #0b1326;
+    --surface:   #131b2e;
+    --surface-hi:#222a3d;
+    --border:    #2d3449;
+    --primary:   #d0bcff;
+    --secondary: #4cd7f6;
+    --tertiary:  #4edea3;
+    --error:     #ffb4ab;
+    --warn:      #f9a825;
+    --text:      #dae2fd;
+    --muted:     #cbc3d7;
+    --outline:   #494454;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ── Cover ───────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid var(--outline);
+    border-radius: 16px;
+    padding: 64px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    margin-bottom: 64px;
+  }
+  .cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 2px 2px, rgba(78,222,163,0.05) 1px, transparent 0);
+    background-size: 28px 28px;
+    border-radius: 16px;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -60px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(78,222,163,0.07) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--tertiary);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    position: relative; z-index: 1;
+  }
+  .cover-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--secondary);
+    border: 1px solid rgba(76,215,246,0.3);
+    background: rgba(76,215,246,0.07);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 48px;
+    position: relative; z-index: 1;
+  }
+  .cover h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 60px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 0.95;
+    margin-bottom: 24px;
+    position: relative; z-index: 1;
+  }
+  .cover h1 .accent { color: var(--tertiary); }
+  .cover-desc {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 520px;
+    margin-bottom: 48px;
+    line-height: 1.7;
+    position: relative; z-index: 1;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+    position: relative; z-index: 1;
+  }
+  .cover-meta-item label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--outline);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--tertiary);
+  }
+  .cover-scan {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--tertiary), transparent);
+    opacity: 0.5;
+    border-radius: 0 0 16px 16px;
+  }
+
+  /* ── Section header ──────────────────────────────────── */
+  .section-header {
+    margin: 56px 0 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--outline);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .section-header h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--secondary);
+  }
+  .section-header span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--outline);
+  }
+
+  /* ── Steps ───────────────────────────────────────────── */
+  .steps { display: flex; flex-direction: column; gap: 20px; }
+  .step {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .step-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--tertiary);
+    text-align: center;
+    padding-top: 2px;
+    line-height: 1;
+  }
+  .step-body {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .step-body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--tertiary), transparent);
+  }
+  .step-body h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .step-body p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.7;
+  }
+  .step-body p:last-child { margin-bottom: 0; }
+
+  /* ── Code block ──────────────────────────────────────── */
+  .code-block {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid var(--outline);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--text);
+    white-space: pre;
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+  .code-block .comment { color: var(--outline); }
+  .code-block .cmd     { color: var(--primary); }
+  .code-block .val     { color: var(--tertiary); }
+  .code-block .flag    { color: var(--secondary); }
+  .code-block .warn    { color: var(--warn); }
+
+  /* ── Info cards ──────────────────────────────────────── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  .info-card .ic-icon { font-size: 20px; margin-bottom: 10px; }
+  .info-card h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .info-card p { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Command reference table ─────────────────────────── */
+  .cmd-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .cmd-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .cmd-row:last-child { border-bottom: none; }
+  .cmd-row.header {
+    background: var(--surface-hi);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: var(--outline);
+  }
+  .cmd-cell {
+    padding: 12px 20px;
+    font-size: 12px;
+    border-right: 1px solid rgba(255,255,255,0.04);
+  }
+  .cmd-cell:last-child { border-right: none; }
+  .cmd-cell code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--secondary);
+  }
+  .cmd-cell.desc { color: var(--muted); }
+
+  /* ── Status table ────────────────────────────────────── */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .status-card-header {
+    background: var(--surface-hi);
+    padding: 10px 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-bottom: 1px solid var(--border);
+  }
+  .status-card-header.green { color: var(--tertiary); }
+  .status-card-header.red   { color: var(--error); }
+  .status-card-header.warn  { color: var(--warn); }
+  .status-card-header.cyan  { color: var(--secondary); }
+  .status-card-body {
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 2;
+    white-space: pre;
+  }
+
+  /* ── Warning / note boxes ────────────────────────────── */
+  .warn-box {
+    background: rgba(255,180,171,0.06);
+    border: 1px solid rgba(255,180,171,0.25);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .warn-box strong { color: var(--error); }
+
+  .tip-box {
+    background: rgba(78,222,163,0.05);
+    border: 1px solid rgba(78,222,163,0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .tip-box strong { color: var(--tertiary); }
+
+  .info-box {
+    background: rgba(76,215,246,0.05);
+    border: 1px solid rgba(76,215,246,0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .info-box strong { color: var(--secondary); }
+
+  /* ── PM2 lifecycle ───────────────────────────────────── */
+  .lifecycle {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .lc-step {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    min-width: 120px;
+  }
+  .lc-step .lc-icon { font-size: 20px; margin-bottom: 6px; }
+  .lc-step .lc-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .lc-step .lc-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--outline);
+    margin-top: 4px;
+  }
+  .lc-arrow {
+    font-size: 18px;
+    color: var(--outline);
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .lc-step.active { border-color: var(--tertiary); }
+  .lc-step.active .lc-label { color: var(--tertiary); }
+  .lc-step.stop { border-color: var(--error); }
+  .lc-step.stop .lc-label { color: var(--error); }
+
+  /* ── Token table ─────────────────────────────────────── */
+  .token-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .token-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 90px;
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 12px;
+    align-items: center;
+  }
+  .token-row:last-child { border-bottom: none; }
+  .token-row.header {
+    background: var(--surface-hi);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--outline);
+  }
+  .token-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--secondary); }
+  .token-desc { color: var(--muted); }
+  .token-scope {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-align: right;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .scope-server { color: var(--tertiary);  background: rgba(78,222,163,0.1); }
+  .scope-global { color: var(--warn);      background: rgba(249,168,37,0.1); }
+
+  /* ── Troubleshoot ────────────────────────────────────── */
+  .trouble-list { display: flex; flex-direction: column; gap: 16px; }
+  .trouble-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .trouble-header {
+    background: var(--surface-hi);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .trouble-icon { font-size: 14px; }
+  .trouble-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .trouble-body { padding: 14px 20px; }
+  .trouble-body p { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+  .trouble-body p:last-child { margin-bottom: 0; }
+
+  /* ── Print ───────────────────────────────────────────── */
+  @media print {
+    body { background: #0b1326 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cover { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ COVER ════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">DevOrbit · Agent Guide</div>
+  <div class="cover-badge">devorbit-agent · v0.1.0 · npm published</div>
+  <h1>Server<br/><span class="accent">Agent</span><br/>Guide</h1>
+  <p class="cover-desc">
+    The DevOrbit Agent is a lightweight Node.js process that runs on your server and streams
+    CPU, RAM, disk, and network metrics to your DevOrbit dashboard every 5 seconds.
+    Zero dependencies on the server — just Node.js.
+  </p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <label>Package</label>
+      <span>devorbit-agent</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Runtime</label>
+      <span>Node.js 18+</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Transport</label>
+      <span>WebSocket</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Interval</label>
+      <span>5 seconds</span>
+    </div>
+  </div>
+  <div class="cover-scan"></div>
+</div>
+
+<!-- ═══════════════════════════ 1. HOW IT WORKS ══════════════════ -->
+<div class="section-header">
+  <h2>1 · How It Works</h2>
+  <span>// read-only, zero impact on your server</span>
+</div>
+
+<div class="info-grid">
+  <div class="info-card">
+    <div class="ic-icon">📡</div>
+    <h4>Collects Metrics</h4>
+    <p>Uses the <code>systeminformation</code> npm package to read CPU load, RAM usage, disk usage, and network I/O from the OS every 5 seconds.</p>
+  </div>
+  <div class="info-card">
+    <div class="ic-icon">⚡</div>
+    <h4>Streams via WebSocket</h4>
+    <p>Connects to your DevOrbit API via Socket.io using the agent token as authentication. Sends a metric event every 5 seconds. Auto-reconnects on disconnect.</p>
+  </div>
+  <div class="info-card">
+    <div class="ic-icon">🛡</div>
+    <h4>Read-Only — Safe</h4>
+    <p>The agent only reads system stats. It does not open any ports, does not modify files, and has no impact on running processes or server performance.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ 2. PREREQUISITES ═════════════════ -->
+<div class="section-header">
+  <h2>2 · Prerequisites</h2>
+  <span>// what you need on the server</span>
+</div>
+
+<div class="cmd-table">
+  <div class="cmd-row header">
+    <div class="cmd-cell">Requirement</div>
+    <div class="cmd-cell">Check command</div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell"><strong>Node.js 18+</strong></div>
+    <div class="cmd-cell desc"><code>node --version</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell"><strong>npm 8+</strong></div>
+    <div class="cmd-cell desc"><code>npm --version</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell"><strong>Agent token</strong></div>
+    <div class="cmd-cell desc">Get from DevOrbit dashboard → Settings → Agent Setup</div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell"><strong>API URL</strong></div>
+    <div class="cmd-cell desc">The URL where your DevOrbit API is running (port 4000)</div>
+  </div>
+</div>
+
+<div class="tip-box">
+  <strong>Install Node.js on Ubuntu/Debian:</strong><br/>
+  <code style="font-family:'JetBrains Mono',monospace; font-size:11px;">curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs</code>
+</div>
+
+<!-- ═══════════════════════════ 3. INSTALL & RUN ═════════════════ -->
+<div class="section-header">
+  <h2>3 · Install &amp; Run</h2>
+  <span>// one command on any server</span>
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Get your agent token</h4>
+      <p>In your DevOrbit dashboard, go to <strong>Settings → Agent Setup</strong>. Click <strong>Register Server</strong>, give it a name, and copy the generated token.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>SSH into your server</h4>
+      <div class="code-block"><span class="cmd">ssh</span> <span class="val">ubuntu@your-server-ip</span></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Start the agent</h4>
+      <p>Run directly with npx — no global install needed:</p>
+      <div class="code-block"><span class="cmd">npx devorbit-agent start</span> <span class="flag">\</span>
+  <span class="flag">--token=</span><span class="val">your-agent-token-here</span> <span class="flag">\</span>
+  <span class="flag">--api=</span><span class="val">http://your-devorbit-api:4000</span></div>
+      <p style="margin-top:12px;">You should see:</p>
+      <div class="code-block"><span class="val">DevOrbit Agent v0.1.0</span>
+<span class="comment">Connecting to http://your-devorbit-api:4000...</span>
+<span class="val">✓ Connected (socket: abc123)</span></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Verify in dashboard</h4>
+      <p>Open DevOrbit → <strong>Servers</strong> → click your server → live CPU/RAM charts should appear within 5 seconds.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ 4. KEEP IT RUNNING (PM2) ═════════ -->
+<div class="section-header">
+  <h2>4 · Keep It Running with PM2</h2>
+  <span>// survive SSH disconnect and server reboots</span>
+</div>
+
+<div class="info-box">
+  <strong>Why PM2?</strong> Running npx directly stops when you close SSH. PM2 keeps the agent running in the background, restarts it if it crashes, and auto-starts it on server reboot.
+</div>
+
+<div class="lifecycle">
+  <div class="lc-step">
+    <div class="lc-icon">📦</div>
+    <div class="lc-label">Install</div>
+    <div class="lc-cmd">npm i -g pm2</div>
+  </div>
+  <div class="lc-arrow">→</div>
+  <div class="lc-step active">
+    <div class="lc-icon">▶</div>
+    <div class="lc-label">Start</div>
+    <div class="lc-cmd">pm2 start</div>
+  </div>
+  <div class="lc-arrow">→</div>
+  <div class="lc-step">
+    <div class="lc-icon">💾</div>
+    <div class="lc-label">Save</div>
+    <div class="lc-cmd">pm2 save</div>
+  </div>
+  <div class="lc-arrow">→</div>
+  <div class="lc-step">
+    <div class="lc-icon">🔁</div>
+    <div class="lc-label">Startup</div>
+    <div class="lc-cmd">pm2 startup</div>
+  </div>
+  <div class="lc-arrow">→</div>
+  <div class="lc-step stop">
+    <div class="lc-icon">■</div>
+    <div class="lc-label">Stop</div>
+    <div class="lc-cmd">pm2 stop</div>
+  </div>
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Install PM2 globally</h4>
+      <div class="code-block"><span class="cmd">npm install -g pm2</span></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Start agent with PM2</h4>
+      <div class="code-block"><span class="cmd">pm2 start</span> <span class="val">"npx devorbit-agent start --token=YOUR_TOKEN --api=http://your-api:4000"</span> <span class="flag">--name</span> <span class="val">devorbit-agent</span></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Auto-start on server reboot</h4>
+      <div class="code-block"><span class="cmd">pm2 startup</span>   <span class="comment"># run the command it outputs</span>
+<span class="cmd">pm2 save</span>     <span class="comment"># save current process list</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ 5. MANAGING THE AGENT ════════════ -->
+<div class="section-header">
+  <h2>5 · Managing the Agent</h2>
+  <span>// start · stop · restart · logs</span>
+</div>
+
+<div class="status-grid">
+  <div class="status-card">
+    <div class="status-card-header green">Check status</div>
+    <div class="status-card-body"><span style="color:var(--secondary)">pm2 list</span>
+<span style="color:var(--outline)"># shows all running processes</span>
+
+<span style="color:var(--secondary)">pm2 show devorbit-agent</span>
+<span style="color:var(--outline)"># detailed agent info</span>
+
+<span style="color:var(--secondary)">ps aux | grep devorbit</span>
+<span style="color:var(--outline)"># if not using pm2</span></div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-card-header red">Stop the agent</div>
+    <div class="status-card-body"><span style="color:var(--error)">pm2 stop devorbit-agent</span>
+<span style="color:var(--outline)"># stop but keep in pm2 list</span>
+
+<span style="color:var(--error)">pm2 delete devorbit-agent</span>
+<span style="color:var(--outline)"># stop and remove completely</span>
+
+<span style="color:var(--error)">pkill -f "devorbit-agent"</span>
+<span style="color:var(--outline)"># force kill if not using pm2</span></div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-card-header warn">Restart &amp; reload</div>
+    <div class="status-card-body"><span style="color:var(--warn)">pm2 restart devorbit-agent</span>
+<span style="color:var(--outline)"># restart the agent</span>
+
+<span style="color:var(--warn)">pm2 reload devorbit-agent</span>
+<span style="color:var(--outline)"># zero-downtime reload</span></div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-card-header cyan">View logs</div>
+    <div class="status-card-body"><span style="color:var(--secondary)">pm2 logs devorbit-agent</span>
+<span style="color:var(--outline)"># live log stream</span>
+
+<span style="color:var(--secondary)">pm2 logs devorbit-agent --lines 50</span>
+<span style="color:var(--outline)"># last 50 lines</span>
+
+<span style="color:var(--secondary)">pm2 flush</span>
+<span style="color:var(--outline)"># clear all logs</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ 6. TOKEN MANAGEMENT ══════════════ -->
+<div class="section-header">
+  <h2>6 · Token Management</h2>
+  <span>// one token per server · keep them secret</span>
+</div>
+
+<div class="warn-box">
+  <strong>⚠ Never share your agent token publicly.</strong> It gives access to stream data to your dashboard. If exposed (e.g. in a chat, screenshot, or git commit), rotate it immediately — delete the server in the dashboard and register a new one.
+</div>
+
+<div class="token-card">
+  <div class="token-row header">
+    <div class="cmd-cell">Token type</div>
+    <div class="cmd-cell">Purpose</div>
+    <div class="cmd-cell">Scope</div>
+  </div>
+  <div class="token-row">
+    <div class="token-name">Agent token</div>
+    <div class="token-desc">Authenticates the agent to stream metrics to your dashboard. Generated per server in Settings → Agent Setup.</div>
+    <div class="token-scope scope-server">Per server</div>
+  </div>
+  <div class="token-row">
+    <div class="token-name">JWT (user)</div>
+    <div class="token-desc">Your login session token stored in the browser. Never use this as an agent token.</div>
+    <div class="token-scope scope-global">User session</div>
+  </div>
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">!</div>
+    <div class="step-body">
+      <h4>How to rotate a compromised token</h4>
+      <p>1. Go to DevOrbit dashboard → <strong>Servers</strong> → find the server → click <strong>Delete</strong></p>
+      <p>2. Go to <strong>Settings → Agent Setup</strong> → <strong>Register Server</strong> → copy the new token</p>
+      <p>3. On your server, restart the agent with the new token:</p>
+      <div class="code-block"><span class="cmd">pm2 delete devorbit-agent</span>
+<span class="cmd">pm2 start</span> <span class="val">"npx devorbit-agent start --token=</span><span class="warn">NEW_TOKEN</span><span class="val"> --api=http://your-api:4000"</span> <span class="flag">--name</span> <span class="val">devorbit-agent</span>
+<span class="cmd">pm2 save</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ 7. TROUBLESHOOTING ═══════════════ -->
+<div class="section-header">
+  <h2>7 · Troubleshooting</h2>
+  <span>// common issues and fixes</span>
+</div>
+
+<div class="trouble-list">
+  <div class="trouble-item">
+    <div class="trouble-header">
+      <span class="trouble-icon">❌</span>
+      <span class="trouble-title">Connection error: connect ECONNREFUSED</span>
+    </div>
+    <div class="trouble-body">
+      <p>The API URL is wrong or the API server is not running.</p>
+      <p><strong>Fix:</strong> Check that your DevOrbit API is running and accessible. Test with:</p>
+      <div class="code-block"><span class="cmd">curl</span> <span class="val">http://your-api:4000/api/v1/auth/profile</span>
+<span class="comment"># should return 401, not connection refused</span></div>
+    </div>
+  </div>
+
+  <div class="trouble-item">
+    <div class="trouble-header">
+      <span class="trouble-icon">❌</span>
+      <span class="trouble-title">Error: --token is required</span>
+    </div>
+    <div class="trouble-body">
+      <p>You forgot to pass the <code>--token</code> flag or misspelled it.</p>
+      <div class="code-block"><span class="comment"># Wrong</span>
+<span class="cmd">npx devorbit-agent start</span> <span class="warn">token=abc123</span>
+
+<span class="comment"># Correct</span>
+<span class="cmd">npx devorbit-agent start</span> <span class="flag">--token=</span><span class="val">abc123</span></div>
+    </div>
+  </div>
+
+  <div class="trouble-item">
+    <div class="trouble-header">
+      <span class="trouble-icon">❌</span>
+      <span class="trouble-title">Agent connects but no metrics in dashboard</span>
+    </div>
+    <div class="trouble-body">
+      <p>The agent is connected but the dashboard is not subscribed to the right server room.</p>
+      <p><strong>Fix:</strong> Make sure you are viewing the correct server in the dashboard. The server ID in the URL must match the token's server ID. Try refreshing the page.</p>
+    </div>
+  </div>
+
+  <div class="trouble-item">
+    <div class="trouble-header">
+      <span class="trouble-icon">❌</span>
+      <span class="trouble-title">Agent stops when I close SSH</span>
+    </div>
+    <div class="trouble-body">
+      <p>You ran it directly without PM2. Use PM2 to keep it running in the background.</p>
+      <div class="code-block"><span class="cmd">npm install -g pm2</span>
+<span class="cmd">pm2 start</span> <span class="val">"npx devorbit-agent start --token=TOKEN --api=URL"</span> <span class="flag">--name</span> <span class="val">devorbit-agent</span>
+<span class="cmd">pm2 save</span></div>
+    </div>
+  </div>
+
+  <div class="trouble-item">
+    <div class="trouble-header">
+      <span class="trouble-icon">❌</span>
+      <span class="trouble-title">npx: command not found</span>
+    </div>
+    <div class="trouble-body">
+      <p>Node.js is not installed on the server.</p>
+      <div class="code-block"><span class="comment"># Ubuntu / Debian</span>
+<span class="cmd">curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -</span>
+<span class="cmd">sudo apt-get install -y nodejs</span>
+
+<span class="comment"># Verify</span>
+<span class="cmd">node --version</span>   <span class="comment"># should be v20.x</span>
+<span class="cmd">npm --version</span>    <span class="comment"># should be 10.x+</span></div>
+    </div>
+  </div>
+
+  <div class="trouble-item">
+    <div class="trouble-header">
+      <span class="trouble-icon">❌</span>
+      <span class="trouble-title">Token expired or invalid</span>
+    </div>
+    <div class="trouble-body">
+      <p>Agent tokens are JWTs with an expiry. If the token has expired, generate a new one.</p>
+      <p><strong>Fix:</strong> Dashboard → Servers → delete server → Settings → Agent Setup → Register Server → copy new token → restart agent with new token.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ 8. QUICK REFERENCE ═══════════════ -->
+<div class="section-header">
+  <h2>8 · Quick Reference</h2>
+  <span>// all commands at a glance</span>
+</div>
+
+<div class="cmd-table">
+  <div class="cmd-row header">
+    <div class="cmd-cell">Task</div>
+    <div class="cmd-cell">Command</div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Run once (test)</div>
+    <div class="cmd-cell desc"><code>npx devorbit-agent start --token=TOKEN --api=URL</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Start with PM2</div>
+    <div class="cmd-cell desc"><code>pm2 start "npx devorbit-agent start --token=TOKEN --api=URL" --name devorbit-agent</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Stop agent</div>
+    <div class="cmd-cell desc"><code>pm2 stop devorbit-agent</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Delete agent</div>
+    <div class="cmd-cell desc"><code>pm2 delete devorbit-agent</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Restart agent</div>
+    <div class="cmd-cell desc"><code>pm2 restart devorbit-agent</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">View live logs</div>
+    <div class="cmd-cell desc"><code>pm2 logs devorbit-agent</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Check status</div>
+    <div class="cmd-cell desc"><code>pm2 list</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Enable auto-start</div>
+    <div class="cmd-cell desc"><code>pm2 startup &amp;&amp; pm2 save</code></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-cell">Force kill</div>
+    <div class="cmd-cell desc"><code>pkill -f "devorbit-agent"</code></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DevOrbit — Commit Plan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:        #0b1326;
+    --surface:   #131b2e;
+    --surface-hi:#222a3d;
+    --border:    #2d3449;
+    --primary:   #d0bcff;
+    --secondary: #4cd7f6;
+    --tertiary:  #4edea3;
+    --error:     #ffb4ab;
+    --text:      #dae2fd;
+    --muted:     #cbc3d7;
+    --outline:   #494454;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ── Cover ─────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid var(--outline);
+    border-radius: 16px;
+    padding: 64px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 2px 2px, rgba(76,215,246,0.06) 1px, transparent 0);
+    background-size: 32px 32px;
+    border-radius: 16px;
+  }
+  .cover-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .cover-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--secondary);
+    border: 1px solid rgba(76,215,246,0.3);
+    background: rgba(76,215,246,0.08);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .cover h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 1;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .cover h1 span { color: var(--secondary); }
+  .cover p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 520px;
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    position: relative;
+  }
+  .cover-meta-item label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--outline);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--tertiary);
+  }
+  .cover-scan {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0.4;
+    border-radius: 0 0 16px 16px;
+  }
+
+  /* ── Section header ─────────────────────────────────── */
+  .section-header {
+    margin: 48px 0 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--outline);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .section-header h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--secondary);
+  }
+  .section-header span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--outline);
+  }
+
+  /* ── Summary table ──────────────────────────────────── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .summary-card .val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--primary);
+  }
+  .summary-card .lbl {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── Commit card ────────────────────────────────────── */
+  .commit {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .commit-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--outline);
+    background: var(--surface-hi);
+  }
+  .commit-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: -1px;
+    min-width: 40px;
+  }
+  .commit-msg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    word-break: break-all;
+  }
+  .commit-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .tag-infra    { color: var(--tertiary);  background: rgba(78,222,163,0.12); border: 1px solid rgba(78,222,163,0.25); }
+  .tag-backend  { color: var(--secondary); background: rgba(76,215,246,0.12); border: 1px solid rgba(76,215,246,0.25); }
+  .tag-frontend { color: var(--primary);   background: rgba(208,188,255,0.12); border: 1px solid rgba(208,188,255,0.25); }
+  .tag-agent    { color: #f9a825;          background: rgba(249,168,37,0.12); border: 1px solid rgba(249,168,37,0.25); }
+
+  .commit-body { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .commit-section label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--outline);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .commit-desc {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .file-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .file-list li {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 3px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    border-left: 2px solid var(--outline);
+  }
+  .file-list li.new  { border-left-color: var(--tertiary); }
+  .file-list li.mod  { border-left-color: var(--secondary); }
+
+  /* ── Notes / legend ─────────────────────────────────── */
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 4px;
+    margin-bottom: 32px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .dot-new { background: var(--tertiary); }
+  .dot-mod { background: var(--secondary); }
+
+  .note {
+    background: rgba(208,188,255,0.06);
+    border: 1px solid rgba(208,188,255,0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .note strong { color: var(--primary); }
+
+  /* ── Print ──────────────────────────────────────────── */
+  @media print {
+    body { background: #0b1326 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 32px; }
+    .cover { page-break-after: always; }
+    .commit { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ COVER ═══════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">DevOrbit</div>
+  <div class="cover-badge">V1.0 · PHASE-1 · INITIAL SETUP</div>
+  <h1>Git Commit<br/><span>Strategy</span></h1>
+  <p>
+    Atomic commit plan for the DevOrbit monorepo — Phase 1 foundation.
+    Each commit is logically scoped, independently reviewable, and maps to a
+    single area of responsibility.
+  </p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <label>Total Commits</label>
+      <span>13</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Convention</label>
+      <span>DO-{n}-{slug}</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Branch</label>
+      <span>main</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Phase</label>
+      <span>1 of 3</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Stack</label>
+      <span>Next.js · NestJS · MongoDB</span>
+    </div>
+  </div>
+  <div class="cover-scan"></div>
+</div>
+
+<!-- ═══════════════════════════ SUMMARY ═══════════════════════════ -->
+<div class="section-header">
+  <h2>Overview</h2>
+  <span>// phase-1 breakdown</span>
+</div>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="val">13</div>
+    <div class="lbl">Total commits</div>
+  </div>
+  <div class="summary-card">
+    <div class="val">82</div>
+    <div class="lbl">Files tracked</div>
+  </div>
+  <div class="summary-card">
+    <div class="val">4</div>
+    <div class="lbl">Commit categories</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-new"></div> New file</div>
+  <div class="legend-item"><div class="legend-dot dot-mod"></div> Modified file</div>
+</div>
+
+<!-- ═══════════════════════════ COMMITS ═══════════════════════════ -->
+<div class="section-header">
+  <h2>Commit Plan</h2>
+  <span>// DO-1 → DO-13</span>
+</div>
+
+<!-- DO-1 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">01</div>
+    <div class="commit-msg">git commit -m "DO-1 chore: init monorepo"</div>
+    <span class="commit-tag tag-infra">Infra</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Bootstrap the Turborepo monorepo with pnpm workspaces, shared Prettier/TS config,
+        and root-level tooling. No application code — just the skeleton every subsequent
+        commit will build on.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">package.json</li>
+        <li class="new">pnpm-workspace.yaml</li>
+        <li class="new">turbo.json</li>
+        <li class="new">.gitignore</li>
+        <li class="new">.prettierrc</li>
+        <li class="new">.env.example</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-2 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">02</div>
+    <div class="commit-msg">git commit -m "DO-2 chore: add shared types"</div>
+    <span class="commit-tag tag-infra">Infra</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Add the <code>@devorbit/types</code> shared package. Defines all cross-app
+        TypeScript interfaces (User, Team, Server, Pipeline, Deployment, Metric) used
+        by both the API and the web frontend.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">packages/types/package.json</li>
+        <li class="new">packages/types/src/index.ts</li>
+        <li class="new">packages/types/src/user.ts</li>
+        <li class="new">packages/types/src/team.ts</li>
+        <li class="new">packages/types/src/server.ts</li>
+        <li class="new">packages/types/src/pipeline.ts</li>
+        <li class="new">packages/types/src/deployment.ts</li>
+        <li class="new">packages/types/src/metric.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-3 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">03</div>
+    <div class="commit-msg">git commit -m "DO-3 feat: bootstrap nestjs api"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Bootstrap the NestJS API application — entry point, root module, global
+        validation pipe, CORS, MongoDB connection via Mongoose, and Swagger.
+        No feature modules yet; just the running skeleton.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/package.json</li>
+        <li class="new">apps/api/tsconfig.json</li>
+        <li class="new">apps/api/nest-cli.json</li>
+        <li class="new">apps/api/.env.example</li>
+        <li class="new">apps/api/src/main.ts</li>
+        <li class="new">apps/api/src/app.module.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-4 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">04</div>
+    <div class="commit-msg">git commit -m "DO-4 feat: github oauth and jwt auth"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Implement GitHub OAuth 2.0 login and JWT session management.
+        Includes the User Mongoose schema, Passport GitHub + JWT strategies,
+        and the auth controller with callback redirect to the web frontend.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/users/user.schema.ts</li>
+        <li class="new">apps/api/src/users/users.module.ts</li>
+        <li class="new">apps/api/src/users/users.service.ts</li>
+        <li class="new">apps/api/src/auth/auth.module.ts</li>
+        <li class="new">apps/api/src/auth/auth.service.ts</li>
+        <li class="new">apps/api/src/auth/auth.controller.ts</li>
+        <li class="new">apps/api/src/auth/strategies/github.strategy.ts</li>
+        <li class="new">apps/api/src/auth/strategies/jwt.strategy.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-5 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">05</div>
+    <div class="commit-msg">git commit -m "DO-5 feat: teams module"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Add team workspace management. Users can create a named workspace
+        after first login. The schema stores embedded members with roles
+        (OWNER / ADMIN / MEMBER).
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/teams/team.schema.ts</li>
+        <li class="new">apps/api/src/teams/teams.module.ts</li>
+        <li class="new">apps/api/src/teams/teams.service.ts</li>
+        <li class="new">apps/api/src/teams/teams.controller.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-6 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">06</div>
+    <div class="commit-msg">git commit -m "DO-6 feat: servers metrics and websocket"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Core monitoring infrastructure. Server registration with agent token
+        issuance, MongoDB Time Series collection for metrics (30-day TTL),
+        and the Socket.io gateway that receives agent heartbeats and broadcasts
+        live metric updates to dashboard subscribers.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/servers/server.schema.ts</li>
+        <li class="new">apps/api/src/servers/servers.module.ts</li>
+        <li class="new">apps/api/src/servers/servers.service.ts</li>
+        <li class="new">apps/api/src/servers/servers.controller.ts</li>
+        <li class="new">apps/api/src/metrics/metric.schema.ts</li>
+        <li class="new">apps/api/src/metrics/metrics.module.ts</li>
+        <li class="new">apps/api/src/metrics/metrics.service.ts</li>
+        <li class="new">apps/api/src/metrics/metrics.controller.ts</li>
+        <li class="new">apps/api/src/websockets/metrics.gateway.ts</li>
+        <li class="new">apps/api/src/websockets/websockets.module.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-7 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">07</div>
+    <div class="commit-msg">git commit -m "DO-7 feat: pipelines and deployments"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Pipeline run tracking and deployment registry modules.
+        PipelineRun uses upsert to idempotently sync runs from GitHub/GitLab.
+        Deployment stores platform, status, and URL per project.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/pipelines/pipeline.schema.ts</li>
+        <li class="new">apps/api/src/pipelines/pipelines.module.ts</li>
+        <li class="new">apps/api/src/pipelines/pipelines.service.ts</li>
+        <li class="new">apps/api/src/pipelines/pipelines.controller.ts</li>
+        <li class="new">apps/api/src/deployments/deployment.schema.ts</li>
+        <li class="new">apps/api/src/deployments/deployments.module.ts</li>
+        <li class="new">apps/api/src/deployments/deployments.service.ts</li>
+        <li class="new">apps/api/src/deployments/deployments.controller.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-8 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">08</div>
+    <div class="commit-msg">git commit -m "DO-8 feat: nextjs scaffold and design system"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Bootstrap the Next.js 15 App Router project with the full DevOrbit
+        design system — all Tailwind CSS v4 custom tokens (primary violet,
+        secondary cyan, tertiary green on #0b1326), Space Grotesk + Inter fonts,
+        cyber-grid background utility, and scanline animation.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/package.json</li>
+        <li class="new">apps/web/tsconfig.json</li>
+        <li class="new">apps/web/next.config.ts</li>
+        <li class="new">apps/web/.env.example</li>
+        <li class="new">apps/web/src/styles/globals.css</li>
+        <li class="new">apps/web/src/app/layout.tsx</li>
+        <li class="new">apps/web/src/components/layout/Sidebar.tsx</li>
+        <li class="new">apps/web/src/components/layout/TopBar.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-9 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">09</div>
+    <div class="commit-msg">git commit -m "DO-9 feat: landing and login pages"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Public-facing pages. Landing page with hero, integrations strip,
+        feature cards, stats, and CTA section. Login page with GitHub OAuth
+        button. Auth callback route stores JWT in localStorage and redirects
+        to onboarding.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/src/app/page.tsx</li>
+        <li class="new">apps/web/src/app/login/page.tsx</li>
+        <li class="new">apps/web/src/app/auth/callback/page.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-10 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">10</div>
+    <div class="commit-msg">git commit -m "DO-10 feat: onboarding wizard"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        4-step onboarding wizard shown once after first login.
+        Step 1: workspace name. Step 2: infrastructure selection (cloud / bare metal).
+        Step 3: agent install command with copy button and live connection indicator.
+        Step 4: success screen with auto-redirect to dashboard.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/src/app/onboarding/step-1/page.tsx</li>
+        <li class="new">apps/web/src/app/onboarding/step-2/page.tsx</li>
+        <li class="new">apps/web/src/app/onboarding/step-3/page.tsx</li>
+        <li class="new">apps/web/src/app/onboarding/step-4/page.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-11 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">11</div>
+    <div class="commit-msg">git commit -m "DO-11 feat: dashboard and app pages"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        All authenticated app pages with shared sidebar + topbar layout.
+        Dashboard overview, servers list, server detail (CPU/RAM chart slots,
+        process table, live logs), pipelines table, deployments registry,
+        and agent settings page.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/src/app/dashboard/layout.tsx</li>
+        <li class="new">apps/web/src/app/dashboard/page.tsx</li>
+        <li class="new">apps/web/src/app/servers/layout.tsx</li>
+        <li class="new">apps/web/src/app/servers/page.tsx</li>
+        <li class="new">apps/web/src/app/servers/[id]/layout.tsx</li>
+        <li class="new">apps/web/src/app/servers/[id]/page.tsx</li>
+        <li class="new">apps/web/src/app/pipelines/layout.tsx</li>
+        <li class="new">apps/web/src/app/pipelines/page.tsx</li>
+        <li class="new">apps/web/src/app/deployments/layout.tsx</li>
+        <li class="new">apps/web/src/app/deployments/page.tsx</li>
+        <li class="new">apps/web/src/app/settings/layout.tsx</li>
+        <li class="new">apps/web/src/app/settings/agent/page.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-12 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">12</div>
+    <div class="commit-msg">git commit -m "DO-12 feat: monitoring agent"</div>
+    <span class="commit-tag tag-agent">Agent</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Lightweight Node.js monitoring agent. Connects to the API via Socket.io
+        using an agent token, collects CPU / RAM / disk / network metrics every
+        5 seconds using <code>systeminformation</code>, and streams them in real
+        time. Distributed as <code>npx @devorbit/agent start --token=…</code>
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/agent/package.json</li>
+        <li class="new">apps/agent/tsconfig.json</li>
+        <li class="new">apps/agent/src/cli.ts</li>
+        <li class="new">apps/agent/src/agent.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-13 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">13</div>
+    <div class="commit-msg">git commit -m "DO-13 chore: docker compose"</div>
+    <span class="commit-tag tag-infra">Infra</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Complete self-hosted Docker Compose setup — MongoDB 7, Redis 7, API,
+        and Web services with named volumes and environment variable wiring.
+        Dockerfiles for both apps use multi-stage builds to keep images lean.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">docker-compose.yml</li>
+        <li class="new">apps/api/Dockerfile</li>
+        <li class="new">apps/web/Dockerfile</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ PHASE 2 HEADER ════════════════════════ -->
+<div class="section-header" style="margin-top:48px;">
+  <h2>Phase 2 — Core Features</h2>
+  <span>// DO-14 → DO-21</span>
+</div>
+
+<!-- DO-14 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">14</div>
+    <div class="commit-msg">git commit -m "DO-14 feat: projects and integrations API"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        New <code>projects/</code> and <code>integrations/</code> NestJS modules.
+        Projects link teams to GitHub/GitLab repos and Vercel project IDs.
+        Integrations store provider tokens (GitHub, GitLab, Vercel) per team with upsert semantics.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/projects/project.schema.ts</li>
+        <li class="new">apps/api/src/projects/projects.service.ts</li>
+        <li class="new">apps/api/src/projects/projects.controller.ts</li>
+        <li class="new">apps/api/src/projects/projects.module.ts</li>
+        <li class="new">apps/api/src/integrations/integration.schema.ts</li>
+        <li class="new">apps/api/src/integrations/integrations.service.ts</li>
+        <li class="new">apps/api/src/integrations/integrations.controller.ts</li>
+        <li class="new">apps/api/src/integrations/integrations.module.ts</li>
+        <li class="modified">apps/api/src/app.module.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-15 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">15</div>
+    <div class="commit-msg">git commit -m "DO-15 feat: github actions poller"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        <code>GithubPollerService</code> polls <code>GET /repos/{owner}/{repo}/actions/runs</code>
+        every 5 minutes for every team that has a GitHub integration.
+        Maps GitHub run status to the internal enum and upserts PipelineRun documents.
+        Also adds <code>GET /pipelines/recent</code> endpoint.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/jobs/github-poller.service.ts</li>
+        <li class="modified">apps/api/src/pipelines/pipelines.controller.ts</li>
+        <li class="modified">apps/api/src/pipelines/pipelines.service.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-16 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">16</div>
+    <div class="commit-msg">git commit -m "DO-16 feat: vercel deployment sync"</div>
+    <span class="commit-tag tag-backend">Backend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        <code>VercelPollerService</code> polls <code>GET /v6/deployments</code> every 5 minutes,
+        matching deployments to local projects by <code>vercelProjectId</code> and upserting
+        Deployment documents. Adds <code>GET /deployments/recent</code> endpoint and
+        <code>upsert()</code> method on DeploymentsService.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/api/src/jobs/vercel-poller.service.ts</li>
+        <li class="new">apps/api/src/jobs/jobs.module.ts</li>
+        <li class="modified">apps/api/src/deployments/deployments.service.ts</li>
+        <li class="modified">apps/api/src/deployments/deployments.controller.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-17 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">17</div>
+    <div class="commit-msg">git commit -m "DO-17 feat: api client and socket helper"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Typed fetch wrapper (<code>api.ts</code>) covering all Phase 2 endpoints — pipelines,
+        deployments, integrations, projects, metrics. Socket.io helper (<code>socket.ts</code>)
+        with a <code>subscribeToServer()</code> function that manages connect/disconnect and
+        returns a cleanup callback for React <code>useEffect</code>.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/src/lib/api.ts</li>
+        <li class="new">apps/web/src/lib/socket.ts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-18 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">18</div>
+    <div class="commit-msg">git commit -m "DO-18 feat: live server metrics charts"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Recharts-based <code>MetricChart</code> client component renders a rolling 30-point
+        line chart. The <code>/servers/[id]</code> page subscribes to the Socket.io
+        <code>server:{id}</code> room on mount and streams CPU, RAM, disk charts in real time.
+        Falls back to placeholder bars when agent is not connected.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/src/components/charts/MetricChart.tsx</li>
+        <li class="modified">apps/web/src/app/servers/[id]/page.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-19 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">19</div>
+    <div class="commit-msg">git commit -m "DO-19 feat: pipelines and deployments UI"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Pipelines page fetches real data from <code>GET /pipelines/recent</code> and renders
+        status badges, duration, and relative timestamps. Deployments page fetches from
+        <code>GET /deployments/recent</code>, shows platform icons, URLs, and status.
+        Both pages show empty states when no integrations are connected.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="modified">apps/web/src/app/pipelines/page.tsx</li>
+        <li class="modified">apps/web/src/app/deployments/page.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-20 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">20</div>
+    <div class="commit-msg">git commit -m "DO-20 feat: integrations settings page"</div>
+    <span class="commit-tag tag-frontend">Frontend</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Settings page for connecting GitHub, GitLab, and Vercel tokens.
+        Each provider card shows connection status and allows connect/disconnect.
+        Tokens are posted to <code>POST /integrations</code> and stored server-side.
+        Page reads existing connections on load and reflects live state.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">apps/web/src/app/settings/integrations/page.tsx</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DO-21 -->
+<div class="commit">
+  <div class="commit-header">
+    <div class="commit-num">21</div>
+    <div class="commit-msg">git commit -m "DO-21 docs: readme and self-host guide"</div>
+    <span class="commit-tag tag-infra">Docs</span>
+  </div>
+  <div class="commit-body">
+    <div class="commit-section">
+      <label>Description</label>
+      <p class="commit-desc">
+        Root <code>README.md</code> covering project overview, Docker Compose quick start,
+        environment variable reference, monorepo structure, development setup,
+        agent install instructions, tech stack table, and contributing guide.
+      </p>
+    </div>
+    <div class="commit-section">
+      <label>Files</label>
+      <ul class="file-list">
+        <li class="new">README.md</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ NOTES ═══════════════════════════ -->
+<div class="note">
+  <strong>⚠ Important Notes</strong><br/><br/>
+  · These commits are <strong>simulated only</strong> — no actual git commands were run.<br/>
+  · Each commit is independently reviewable and maps to exactly one logical concern.<br/>
+  · Commits <strong>DO-1 → DO-2</strong> are prerequisites for all others (monorepo + types must land first).<br/>
+  · Commits <strong>DO-3 → DO-7</strong> can be reviewed in any order but should be merged in sequence.<br/>
+  · Frontend commits <strong>DO-8 → DO-11</strong> have no dependency on backend — can run in parallel on a feature branch.<br/>
+  · Commit <strong>DO-13</strong> (Docker) should land last to reference final env var shapes from all apps.<br/>
+  · Phase 2 commits <strong>DO-14 → DO-16</strong> (backend) are prerequisites for <strong>DO-17 → DO-20</strong> (frontend).<br/>
+  · <strong>DO-14</strong> (projects + integrations) must land before the pollers (DO-15, DO-16) and the settings UI (DO-20).
+</div>
+
+</body>
+</html>
