@@ -1,0 +1,42 @@
+{
+  "name": "devorbit-agent",
+  "version": "0.1.0",
+  "description": "DevOrbit monitoring agent — stream CPU, RAM, disk metrics to your DevOrbit dashboard",
+  "main": "dist/cli.js",
+  "bin": {
+    "devorbit-agent": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --noEmit",
+    "start": "node dist/cli.js",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "devorbit",
+    "monitoring",
+    "agent",
+    "devops",
+    "metrics",
+    "cpu",
+    "server"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "socket.io-client": "^4.8.1",
+    "systeminformation": "^5.23.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
