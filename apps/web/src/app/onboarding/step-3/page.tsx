@@ -4,16 +4,15 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { getAgentInstallCommand } from '@/lib/agent-install-command';
+import { useAgentInstallBootstrap } from '@/hooks/use-agent-install-bootstrap';
 
 export default function OnboardingStep3() {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const router = useRouter();
+  const { agentToken, provisioning, error, connected } = useAgentInstallBootstrap();
 
-  const rawToken =
-    typeof window !== 'undefined' ? localStorage.getItem('devorbit_token') || '' : '';
-
-  const { full, display } = useMemo(() => getAgentInstallCommand(rawToken), [rawToken]);
+  const { full, display } = useMemo(() => getAgentInstallCommand(agentToken), [agentToken]);
 
   const handleCopy = async () => {
     setCopyError(false);
@@ -53,6 +52,10 @@ export default function OnboardingStep3() {
           </div>
         </div>
 
+        {error && (
+          <p className="mb-6 text-sm text-error max-w-lg text-center font-mono">{error}</p>
+        )}
+
         {/* Terminal */}
         <div className="w-full rounded-xl overflow-hidden shadow-2xl border border-outline-variant/10">
           <div className="bg-surface-container-high px-4 py-3 flex items-center justify-between">
@@ -68,12 +71,15 @@ export default function OnboardingStep3() {
           <div className="bg-surface-container-lowest p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex-1 font-mono text-sm leading-loose min-w-0">
               <span className="text-secondary mr-3">$</span>
-              <code className="text-on-surface break-all">{display}</code>
+              <code className="text-on-surface break-all">
+                {provisioning ? '… preparing install command …' : display}
+              </code>
             </div>
             <button
               type="button"
               onClick={handleCopy}
-              className="flex items-center gap-2 bg-primary text-on-primary-container px-6 py-3 rounded-xl font-headline font-bold text-sm uppercase tracking-tight transition-all active:scale-95 hover:shadow-[0_0_20px_rgba(208,188,255,0.3)] shrink-0"
+              disabled={provisioning || !agentToken}
+              className="flex items-center gap-2 bg-primary text-on-primary-container px-6 py-3 rounded-xl font-headline font-bold text-sm uppercase tracking-tight transition-all active:scale-95 hover:shadow-[0_0_20px_rgba(208,188,255,0.3)] shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {copied ? '✓ Copied!' : '⧉ Copy Command'}
             </button>
@@ -85,15 +91,42 @@ export default function OnboardingStep3() {
           )}
         </div>
 
-        {/* Waiting indicator */}
-        <div className="mt-10 flex items-center gap-4 bg-surface-container-low px-6 py-4 rounded-full border border-outline-variant/10">
-          <div className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-secondary" />
+        {/* Connection status — was static; now reflects API poll */}
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <div
+            className={`flex items-center gap-4 px-6 py-4 rounded-full border ${
+              connected
+                ? 'bg-secondary/10 border-secondary/30'
+                : 'bg-surface-container-low border-outline-variant/10'
+            }`}
+          >
+            <div className="relative flex h-3 w-3">
+              {!connected && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-3 w-3 ${
+                  connected ? 'bg-secondary' : 'bg-secondary'
+                }`}
+              />
+            </div>
+            <span className="font-headline font-bold text-xs tracking-widest text-secondary uppercase">
+              {provisioning
+                ? 'Preparing…'
+                : connected
+                  ? 'Agent connected'
+                  : 'Waiting for agent (first metrics)…'}
+            </span>
           </div>
-          <span className="font-headline font-bold text-xs tracking-widest text-secondary uppercase">
-            Waiting for connection...
-          </span>
+          {connected && (
+            <button
+              type="button"
+              onClick={() => router.push('/onboarding/step-4')}
+              className="text-primary font-headline font-bold text-sm uppercase border-b border-primary/30 hover:border-primary"
+            >
+              Continue to launch →
+            </button>
+          )}
         </div>
 
         <div className="mt-12 flex items-center justify-between w-full">

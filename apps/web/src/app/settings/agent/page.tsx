@@ -3,15 +3,14 @@
 import { useMemo, useState } from 'react';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { getAgentInstallCommand } from '@/lib/agent-install-command';
+import { useAgentInstallBootstrap } from '@/hooks/use-agent-install-bootstrap';
 
 export default function AgentSetupPage() {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const { agentToken, provisioning, error, connected } = useAgentInstallBootstrap();
 
-  const rawToken =
-    typeof window !== 'undefined' ? localStorage.getItem('devorbit_token') || '' : '';
-
-  const { full, display } = useMemo(() => getAgentInstallCommand(rawToken), [rawToken]);
+  const { full, display } = useMemo(() => getAgentInstallCommand(agentToken), [agentToken]);
 
   const handleCopy = async () => {
     setCopyError(false);
@@ -34,6 +33,8 @@ export default function AgentSetupPage() {
         </p>
       </div>
 
+      {error && <p className="text-sm text-error font-mono">{error}</p>}
+
       {/* Terminal snippet */}
       <div className="rounded-xl overflow-hidden border border-outline-variant/10 shadow-2xl">
         <div className="bg-surface-container-high px-4 py-3 flex items-center justify-between">
@@ -47,12 +48,14 @@ export default function AgentSetupPage() {
         </div>
         <div className="bg-surface-container-lowest p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <code className="font-mono text-sm text-on-surface break-all min-w-0">
-            <span className="text-secondary">$</span> {display}
+            <span className="text-secondary">$</span>{' '}
+            {provisioning ? '… preparing …' : display}
           </code>
           <button
             type="button"
             onClick={handleCopy}
-            className="shrink-0 flex items-center justify-center gap-2 bg-primary text-on-primary-container px-4 py-2 rounded-xl text-xs font-bold font-headline uppercase tracking-wider hover:shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all"
+            disabled={provisioning || !agentToken}
+            className="shrink-0 flex items-center justify-center gap-2 bg-primary text-on-primary-container px-4 py-2 rounded-xl text-xs font-bold font-headline uppercase tracking-wider hover:shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all disabled:opacity-40"
           >
             {copied ? '✓ Copied' : '⧉ Copy'}
           </button>
@@ -69,8 +72,8 @@ export default function AgentSetupPage() {
         <h2 className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Installation Guide</h2>
         {[
           { n: '01', text: 'Ensure Node.js 18+ and npm are installed on the target server (npx comes with npm).' },
-          { n: '02', text: 'Paste the command and run it; npm will fetch the devorbit-agent package from the public registry.' },
-          { n: '03', text: 'The agent connects to your DevOrbit API (--api) over the network; the server must reach that URL.' },
+          { n: '02', text: 'The command uses your server agent token (dev_…), not your login JWT.' },
+          { n: '03', text: 'After the agent sends its first metrics, this page shows connected.' },
         ].map((step) => (
           <div key={step.n} className="flex items-start gap-4">
             <span className="text-xs font-mono text-secondary font-bold shrink-0">{step.n}</span>
@@ -84,12 +87,22 @@ export default function AgentSetupPage() {
         <h2 className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface mb-4">Connection Status</h2>
         <div className="flex items-center gap-3">
           <div className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-outline opacity-50" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-outline" />
+            {!connected && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-outline opacity-50" />
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-3 w-3 ${
+                connected ? 'bg-secondary' : 'bg-outline'
+              }`}
+            />
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-outline font-headline">Waiting for signal...</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-outline font-headline">
+            {provisioning ? 'Preparing…' : connected ? 'Agent online' : 'Waiting for first metrics…'}
+          </span>
         </div>
-        <p className="text-xs text-outline mt-3">Awaiting inbound handshake from agent</p>
+        <p className="text-xs text-outline mt-3">
+          {connected ? 'Agent is sending metrics to DevOrbit.' : 'Awaiting inbound handshake from agent'}
+        </p>
 
         <div className="mt-4 pt-4 border-t border-outline-variant/10 grid grid-cols-2 gap-3 text-xs font-mono">
           <div className="flex justify-between">

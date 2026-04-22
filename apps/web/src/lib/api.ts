@@ -27,8 +27,15 @@ export const api = {
     recent: (limit = 50) => request<any[]>(`/deployments/recent?limit=${limit}`),
     byProject: (projectId: string) => request<any[]>(`/deployments/project/${projectId}`),
   },
+  teams: {
+    mine: () => request<any[]>('/teams'),
+    create: (name: string) =>
+      request<any>('/teams', { method: 'POST', body: JSON.stringify({ name }) }),
+  },
   servers: {
     byTeam: (teamId: string) => request<any[]>(`/servers/team/${teamId}`),
+    register: (teamId: string, name: string) =>
+      request<any>('/servers', { method: 'POST', body: JSON.stringify({ teamId, name }) }),
   },
   metrics: {
     recent: (serverId: string, minutes = 15) =>
