@@ -64,6 +64,8 @@ Some clouds only allow **22, 80, 443** from the internet. Your Amuvee runbooks o
 
 4. Open **TCP 80** (and **443** after TLS) in your provider’s security group. Agents can use `--api=http://YOUR_IP` (port 80) because `/socket.io` is proxied to Nest.
 
+**Troubleshooting GitHub login (`Failed to obtain access token`, `EHOSTUNREACH` from inside the API container):** some VPS providers block outbound internet from Docker’s default bridge. The compose file runs the **API** with `network_mode: host` so OAuth can reach GitHub; Mongo/Redis stay on the bridge and are reached via `127.0.0.1` published ports.
+
 ---
 
 ## Monorepo Structure

@@ -25,17 +25,18 @@ services:
       dockerfile: apps/api/Dockerfile
       # Linux: use host network for build so npm/registry works like on the VPS shell.
       network: host
+    # OVH / some hosts: bridge containers cannot reach the public internet (EHOSTUNREACH to GitHub).
+    # Host network uses the same routing as the VM — OAuth token exchange then works.
+    network_mode: host
     container_name: devorbit-api
     restart: unless-stopped
-    ports:
-      - "4000:4000"
     depends_on:
       - mongodb
       - redis
     environment:
       PORT: 4000
-      MONGODB_URI: mongodb://mongodb:27017/devorbit
-      REDIS_URL: redis://redis:6379
+      MONGODB_URI: mongodb://127.0.0.1:27017/devorbit
+      REDIS_URL: redis://127.0.0.1:6379
       JWT_SECRET: ${JWT_SECRET}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
