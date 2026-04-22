@@ -1,18 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { getAgentInstallCommand } from '@/lib/agent-install-command';
 
 export default function OnboardingStep3() {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const router = useRouter();
-  const token = typeof window !== 'undefined' ? localStorage.getItem('devorbit_token') || 'dev_xxxx' : 'dev_xxxx';
-  const command = `npx @devorbit/agent start --token=${token.slice(0, 12)}...`;
+
+  const rawToken =
+    typeof window !== 'undefined' ? localStorage.getItem('devorbit_token') || '' : '';
+
+  const { full, display } = useMemo(() => getAgentInstallCommand(rawToken), [rawToken]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(`npx @devorbit/agent start --token=${token}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopyError(false);
+    const ok = await copyTextToClipboard(full);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      setCopyError(true);
+    }
   };
 
   return (
@@ -55,20 +66,23 @@ export default function OnboardingStep3() {
           </div>
 
           <div className="bg-surface-container-lowest p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex-1 font-mono text-sm leading-loose">
+            <div className="flex-1 font-mono text-sm leading-loose min-w-0">
               <span className="text-secondary mr-3">$</span>
-              <code className="text-on-surface break-all">
-                npx <span className="text-primary">@devorbit/agent</span> start --token{' '}
-                <span className="text-tertiary">{command.split('--token')[1]}</span>
-              </code>
+              <code className="text-on-surface break-all">{display}</code>
             </div>
             <button
+              type="button"
               onClick={handleCopy}
               className="flex items-center gap-2 bg-primary text-on-primary-container px-6 py-3 rounded-xl font-headline font-bold text-sm uppercase tracking-tight transition-all active:scale-95 hover:shadow-[0_0_20px_rgba(208,188,255,0.3)] shrink-0"
             >
               {copied ? '✓ Copied!' : '⧉ Copy Command'}
             </button>
           </div>
+          {copyError && (
+            <p className="px-8 pb-4 text-xs text-error font-mono">
+              Copy failed (common on locked-down browsers). Select the command above and copy manually, or use HTTPS.
+            </p>
+          )}
         </div>
 
         {/* Waiting indicator */}
@@ -83,10 +97,10 @@ export default function OnboardingStep3() {
         </div>
 
         <div className="mt-12 flex items-center justify-between w-full">
-          <button onClick={() => router.back()} className="text-outline text-xs font-headline font-bold uppercase tracking-widest flex items-center gap-2 hover:text-on-surface transition-colors">
+          <button type="button" onClick={() => router.back()} className="text-outline text-xs font-headline font-bold uppercase tracking-widest flex items-center gap-2 hover:text-on-surface transition-colors">
             ← Previous Step
           </button>
-          <button onClick={() => router.push('/onboarding/step-4')} className="text-secondary font-headline font-bold text-xs uppercase border-b border-secondary/20 hover:border-secondary transition-colors">
+          <button type="button" onClick={() => router.push('/onboarding/step-4')} className="text-secondary font-headline font-bold text-xs uppercase border-b border-secondary/20 hover:border-secondary transition-colors">
             Skip for now →
           </button>
         </div>

@@ -1,5 +1,28 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { getAgentInstallCommand } from '@/lib/agent-install-command';
+
 export default function AgentSetupPage() {
-  const command = 'npx @devorbit/agent start --token=<YOUR_TOKEN>';
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+
+  const rawToken =
+    typeof window !== 'undefined' ? localStorage.getItem('devorbit_token') || '' : '';
+
+  const { full, display } = useMemo(() => getAgentInstallCommand(rawToken), [rawToken]);
+
+  const handleCopy = async () => {
+    setCopyError(false);
+    const ok = await copyTextToClipboard(full);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      setCopyError(true);
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -22,23 +45,32 @@ export default function AgentSetupPage() {
           <span className="text-xs font-mono text-outline uppercase tracking-widest">devorbit-terminal — bash</span>
           <div className="w-12" />
         </div>
-        <div className="bg-surface-container-lowest p-6 flex items-center justify-between gap-4">
-          <code className="font-mono text-sm text-on-surface break-all">
-            <span className="text-secondary">$</span> {command}
+        <div className="bg-surface-container-lowest p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <code className="font-mono text-sm text-on-surface break-all min-w-0">
+            <span className="text-secondary">$</span> {display}
           </code>
-          <button className="shrink-0 flex items-center gap-2 bg-primary text-on-primary-container px-4 py-2 rounded-xl text-xs font-bold font-headline uppercase tracking-wider hover:shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all">
-            ⧉ Copy
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="shrink-0 flex items-center justify-center gap-2 bg-primary text-on-primary-container px-4 py-2 rounded-xl text-xs font-bold font-headline uppercase tracking-wider hover:shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all"
+          >
+            {copied ? '✓ Copied' : '⧉ Copy'}
           </button>
         </div>
+        {copyError && (
+          <p className="px-6 pb-4 text-xs text-error font-mono">
+            Copy failed on HTTP — select the command and copy manually, or enable HTTPS.
+          </p>
+        )}
       </div>
 
       {/* Installation guide */}
       <div className="bg-surface-container-low rounded-xl p-6 border border-outline-variant/5 space-y-4">
         <h2 className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Installation Guide</h2>
         {[
-          { n: '01', text: 'Ensure you have Node.js v18+ installed on your target machine.' },
-          { n: '02', text: 'Paste the command above into your terminal and press enter.' },
-          { n: '03', text: 'The agent will automatically handshake with the DevOrbit control plane.' },
+          { n: '01', text: 'Ensure Node.js 18+ and npm are installed on the target server (npx comes with npm).' },
+          { n: '02', text: 'Paste the command and run it; npm will fetch the devorbit-agent package from the public registry.' },
+          { n: '03', text: 'The agent connects to your DevOrbit API (--api) over the network; the server must reach that URL.' },
         ].map((step) => (
           <div key={step.n} className="flex items-start gap-4">
             <span className="text-xs font-mono text-secondary font-bold shrink-0">{step.n}</span>
