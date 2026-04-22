@@ -67,4 +67,9 @@ export class MetricsGateway implements OnGatewayConnection, OnGatewayDisconnect 
   handleSubscribe(@ConnectedSocket() client: Socket, @MessageBody() serverId: string) {
     client.join(`server:${serverId}`);
   }
+
+  @SubscribeMessage('unsubscribe:server')
+  handleUnsubscribe(@ConnectedSocket() client: Socket, @MessageBody() serverId: string) {
+    client.leave(`server:${serverId}`);
+  }
 }

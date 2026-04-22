@@ -31,8 +31,15 @@ export function subscribeToServer(
   const s = getSocket();
   if (!s.connected) s.connect();
   s.emit('subscribe:server', serverId);
-  s.on(`server:${serverId}`, onMetric);
+
+  // API emits `metric:update` to room `server:<id>` (see MetricsGateway), not an event named `server:<id>`.
+  const handler = (payload: { serverId?: string | { toString(): string } }) => {
+    const sid = payload?.serverId != null ? String(payload.serverId) : '';
+    if (sid === serverId) onMetric(payload);
+  };
+  s.on('metric:update', handler);
   return () => {
-    s.off(`server:${serverId}`, onMetric);
+    s.emit('unsubscribe:server', serverId);
+    s.off('metric:update', handler);
   };
 }
