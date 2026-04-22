@@ -48,6 +48,22 @@ Copy `.env.example` to `.env` and set the following:
 
 Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers).
 
+### Nginx on port 80 (OVH / firewalls that block `:3000` and `:4000`)
+
+Some clouds only allow **22, 80, 443** from the internet. Your Amuvee runbooks often use **Nginx as a reverse proxy**; Devorbit needs the same pattern, but with **three upstreams**: Next.js (`/`), Nest REST + Swagger (`/api/`), and Socket.io (`/socket.io/`).
+
+1. Copy [`deploy/nginx/devorbit.conf`](deploy/nginx/devorbit.conf) to the server and enable the site (commands are in the file header).
+2. Update root `.env` to use **no high ports** (replace with your public IP or domain):
+
+   - `WEB_URL=http://YOUR_IP`
+   - `API_URL=http://YOUR_IP`
+   - `WS_URL=ws://YOUR_IP`
+   - `GITHUB_CALLBACK_URL=http://YOUR_IP/api/v1/auth/github/callback`
+
+3. Rebuild the **web** image so `NEXT_PUBLIC_*` matches: `docker compose up -d --build web` (API container can stay as-is; CORS uses `WEB_URL`).
+
+4. Open **TCP 80** (and **443** after TLS) in your provider’s security group. Agents can use `--api=http://YOUR_IP` (port 80) because `/socket.io` is proxied to Nest.
+
 ---
 
 ## Monorepo Structure
