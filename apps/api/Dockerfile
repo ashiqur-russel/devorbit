@@ -1,5 +1,8 @@
 FROM node:20-alpine AS base
-RUN corepack enable pnpm
+# Prefer IPv4 (avoids broken IPv6 routes in some Docker/OVH setups).
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
+# Avoid Corepack fetching pnpm during build (often fails behind strict Docker DNS).
+RUN npm install -g pnpm@9.15.4
 
 FROM base AS builder
 WORKDIR /app

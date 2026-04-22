@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
-RUN corepack enable pnpm
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
+RUN npm install -g pnpm@9.15.4
 
 FROM base AS builder
 WORKDIR /app

@@ -23,6 +23,8 @@ services:
     build:
       context: ./
       dockerfile: apps/api/Dockerfile
+      # Linux: use host network for build so npm/registry works like on the VPS shell.
+      network: host
     container_name: devorbit-api
     restart: unless-stopped
     ports:
@@ -44,6 +46,7 @@ services:
     build:
       context: ./
       dockerfile: apps/web/Dockerfile
+      network: host
       args:
         NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:4000}
         NEXT_PUBLIC_WS_URL: ${WS_URL:-ws://localhost:4000}
