@@ -17,8 +17,11 @@ RUN pnpm --filter @devorbit/api deploy --prod /prod && \
     cp -r /app/apps/api/dist /prod/dist
 
 FROM node:20-alpine AS runner
+# TLS to GitHub (OAuth token exchange) + system CA bundle for Alpine
+RUN apk add --no-cache ca-certificates
 WORKDIR /app
 ENV NODE_ENV=production
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
 COPY --from=deployer /prod ./
 EXPOSE 4000
 CMD ["node", "dist/main"]
