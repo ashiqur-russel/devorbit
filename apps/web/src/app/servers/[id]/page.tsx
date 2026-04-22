@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { subscribeToServer } from '@/lib/socket';
 import MetricChart from '@/components/charts/MetricChart';
 
@@ -23,7 +23,8 @@ function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-export default function ServerDetailPage({ params }: { params: { id: string } }) {
+export default function ServerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [cpu, setCpu] = useState<MetricPoint[]>([]);
   const [ram, setRam] = useState<MetricPoint[]>([]);
   const [disk, setDisk] = useState<MetricPoint[]>([]);
@@ -31,7 +32,7 @@ export default function ServerDetailPage({ params }: { params: { id: string } })
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = subscribeToServer(params.id, (metric: LiveMetric) => {
+    const unsubscribe = subscribeToServer(id, (metric: LiveMetric) => {
       const point = { time: formatTime(new Date()), value: 0 };
       setConnected(true);
       setLatest(metric);
@@ -40,7 +41,7 @@ export default function ServerDetailPage({ params }: { params: { id: string } })
       setDisk((prev) => [...prev.slice(-(MAX_POINTS - 1)), { ...point, value: metric.disk }]);
     });
     return unsubscribe;
-  }, [params.id]);
+  }, [id]);
 
   return (
     <div className="space-y-8">
@@ -61,7 +62,7 @@ export default function ServerDetailPage({ params }: { params: { id: string } })
           <h1 className="text-4xl font-black text-on-surface font-headline tracking-tighter">
             Server Detail
           </h1>
-          <p className="text-on-surface-variant text-sm mt-1 font-mono">{params.id}</p>
+          <p className="text-on-surface-variant text-sm mt-1 font-mono">{id}</p>
         </div>
       </div>
 
@@ -85,7 +86,7 @@ export default function ServerDetailPage({ params }: { params: { id: string } })
                   label: 'Net Out',
                   value: latest ? `${(latest.networkOut / 1024).toFixed(1)} KB/s` : '—',
                 },
-                { label: 'Agent ID', value: params.id.slice(0, 12) + '…' },
+                { label: 'Agent ID', value: id.slice(0, 12) + '…' },
               ].map((row) => (
                 <div
                   key={row.label}
