@@ -3,7 +3,10 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "docker:up": "docker compose up -d mongodb redis",
+    "docker:down": "docker compose down",
+    "dev": "docker compose up -d mongodb redis && turbo run dev",
+    "dev:apps": "turbo run dev",
     "lint": "turbo run lint",
     "format": "turbo run format",
     "test": "turbo run test",
