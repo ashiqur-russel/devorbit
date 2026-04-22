@@ -44,6 +44,9 @@ services:
     build:
       context: ./
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:4000}
+        NEXT_PUBLIC_WS_URL: ${WS_URL:-ws://localhost:4000}
     container_name: devorbit-web
     restart: unless-stopped
     ports:
