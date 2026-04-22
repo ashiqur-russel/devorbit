@@ -10,8 +10,9 @@ export function getAgentInstallCommand(agentToken: string): {
     (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || DEFAULT_API;
   const t = agentToken.trim();
   const tokenForCmd = t || 'YOUR_AGENT_TOKEN';
-  const full = `npx devorbit-agent start --token=${tokenForCmd} --api=${apiUrl}`;
+  // --background returns the shell immediately; same npx cache, no reinstall.
+  const full = `npx devorbit-agent start --token=${tokenForCmd} --api=${apiUrl} --background`;
   const displayToken = t.length > 24 ? `${t.slice(0, 20)}…` : tokenForCmd;
-  const display = `npx devorbit-agent start --token=${displayToken} --api=${apiUrl}`;
+  const display = `npx devorbit-agent start --token=${displayToken} --api=${apiUrl} --background`;
   return { full, display };
 }

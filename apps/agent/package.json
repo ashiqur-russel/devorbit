@@ -1,6 +1,6 @@
 {
   "name": "devorbit-agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DevOrbit monitoring agent — stream CPU, RAM, disk metrics to your DevOrbit dashboard",
   "main": "dist/cli.js",
   "bin": {

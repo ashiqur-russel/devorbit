@@ -73,7 +73,7 @@ export default function AgentSetupPage() {
         {[
           { n: '01', text: 'Ensure Node.js 18+ and npm are installed on the target server (npx comes with npm).' },
           { n: '02', text: 'The command uses your server agent token (dev_…), not your login JWT.' },
-          { n: '03', text: 'After the agent sends its first metrics, this page shows connected.' },
+          { n: '03', text: 'The command uses --background so SSH returns immediately; stop with the kill PID line printed by the agent.' },
         ].map((step) => (
           <div key={step.n} className="flex items-start gap-4">
             <span className="text-xs font-mono text-secondary font-bold shrink-0">{step.n}</span>

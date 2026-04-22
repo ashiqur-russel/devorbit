@@ -115,8 +115,10 @@ Then set `MONGODB_URI=mongodb://localhost:27017/devorbit` and `REDIS_URL=redis:/
 Install the agent on any server you want to monitor:
 
 ```bash
-npx devorbit-agent start --token=<AGENT_TOKEN> --api=http://your-devorbit-instance:4000
+npx devorbit-agent start --token=<AGENT_TOKEN> --api=http://your-devorbit-instance:4000 --background
 ```
+
+(`--background` detaches from your SSH session; omit it if you want logs in the foreground. Same `npx` command — **no reinstall** when you stop/start.)
 
 Get your `AGENT_TOKEN` from **Settings → Agent Setup** in the dashboard. The agent:
 

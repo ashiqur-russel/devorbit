@@ -37,7 +37,9 @@ export default function OnboardingStep3() {
             Agent Installation
           </h1>
           <p className="text-on-surface-variant max-w-md mx-auto text-lg leading-relaxed">
-            Run this command on any server you want to monitor.
+            Run this command on any server you want to monitor. It includes <code className="text-tertiary">--background</code> so
+            your shell returns right away — <strong className="text-on-surface">npx does not reinstall</strong> each time; to stop
+            the agent, use the <code className="text-tertiary">kill</code> command printed in the output.
           </p>
         </div>
 
