@@ -12,6 +12,9 @@ COPY apps/api/ ./apps/api/
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @devorbit/api build
 
+# Production dependency bundle: pnpm writes only to this directory (not /app).
+# "Failed to create bin" warnings for webpack/browserslist/etc. are expected — those
+# are transitive dev-tool bins not shipped into /prod; the API runtime does not need them.
 FROM builder AS deployer
 RUN pnpm --filter @devorbit/api deploy --prod /prod && \
     cp -r /app/apps/api/dist /prod/dist
@@ -22,6 +25,7 @@ RUN apk add --no-cache ca-certificates curl
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--dns-result-order=ipv4first
+# Must match deployer's `pnpm deploy --prod /prod` output (not the builder WORKDIR /app).
 COPY --from=deployer /prod ./
 EXPOSE 4000
 CMD ["node", "dist/main"]
