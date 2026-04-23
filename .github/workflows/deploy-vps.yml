@@ -52,17 +52,17 @@ jobs:
                 exit 1
               fi
 
-              echo "Waiting for API HTTP on http://127.0.0.1:4000/api (Swagger)…"
+              echo "Waiting for API HTTP on http://127.0.0.1:4000/api/v1/health…"
               api_ready=0
               for _ in $(seq 1 90); do
-                if curl -sf --connect-timeout 2 --max-time 5 "http://127.0.0.1:4000/api" >/dev/null 2>&1; then
+                if curl -sf --connect-timeout 2 --max-time 5 "http://127.0.0.1:4000/api/v1/health" >/dev/null 2>&1; then
                   api_ready=1
                   break
                 fi
                 sleep 1
               done
               if [ "${api_ready}" -ne 1 ]; then
-                echo "API did not respond on http://127.0.0.1:4000/api within 90s — recent api logs:"
+                echo "API did not respond on http://127.0.0.1:4000/api/v1/health within 90s — recent api logs:"
                 docker compose logs api --tail 200 || true
                 docker compose ps -a || true
                 exit 1

@@ -18,7 +18,7 @@ RUN pnpm --filter @devorbit/api deploy --prod /prod && \
 
 FROM node:20-alpine AS runner
 # TLS to GitHub (OAuth token exchange) + system CA bundle for Alpine
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates curl
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--dns-result-order=ipv4first
