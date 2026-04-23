@@ -15,7 +15,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # Only after green CI on main from a real push (not pull_request), or manual dispatch.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
 
     steps:
       - name: Deploy over SSH (git pull + rebuild + restart)
@@ -27,7 +33,35 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             set -euo pipefail
-            cd "${{ secrets.VPS_APP_DIR }}"
+            APP_DIR="${{ secrets.VPS_APP_DIR }}"
+            cd "$APP_DIR"
+
+            # Snapshot current production commit before any change (rollback target).
+            PREV_SHA="$(git rev-parse HEAD)"
+            echo "Previous deploy SHA (rollback target): ${PREV_SHA}"
+
+            rollback() {
+              trap - ERR
+              set +e
+              echo ":: Deploy failed — rolling back to ${PREV_SHA} ::"
+              cd "$APP_DIR" || { echo "Rollback: cannot cd to APP_DIR"; return 1; }
+              git fetch --all --prune
+              git checkout main
+              git reset --hard "${PREV_SHA}"
+              docker compose pull || true
+              docker compose build
+              docker compose up -d
+              echo ":: Rollback complete; verify: git log -1 --oneline && docker compose ps ::"
+            }
+
+            fail_deploy() {
+              echo ":: $1 ::"
+              rollback
+              exit 1
+            }
+
+            trap 'ec=$?; echo ":: Deploy step failed (exit ${ec}) ::"; rollback; exit "${ec}"' ERR
+
             git fetch --all --prune
             git checkout main
             git pull --ff-only origin main
@@ -37,7 +71,7 @@ jobs:
             docker compose up -d
 
             docker compose ps
- 
+
             # Report deployment from inside the VPS (avoids Nginx/public networking issues).
             if [ -n "${{ secrets.DEVORBIT_PROJECT_ID }}" ] && [ -n "${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" ]; then
               # Secrets can accidentally include trailing newlines; sanitize before use.
@@ -45,11 +79,11 @@ jobs:
               deploy_token="$(printf %s "${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" | tr -d '\r\n')"
               if ! echo "$project_id" | grep -Eq '^[a-f0-9]{24}$'; then
                 echo "Invalid DEVORBIT_PROJECT_ID (expected 24-char hex Mongo ObjectId): $project_id"
-                exit 1
+                fail_deploy "Invalid DEVORBIT_PROJECT_ID"
               fi
               if [ -z "${deploy_token}" ]; then
                 echo "Invalid DEVORBIT_DEPLOY_TOKEN (empty after trimming newlines)"
-                exit 1
+                fail_deploy "Invalid DEVORBIT_DEPLOY_TOKEN"
               fi
 
               echo "Waiting for API HTTP on http://127.0.0.1:4000/api/v1/health…"
@@ -65,7 +99,7 @@ jobs:
                 echo "API did not respond on http://127.0.0.1:4000/api/v1/health within 90s — recent api logs:"
                 docker compose logs api --tail 200 || true
                 docker compose ps -a || true
-                exit 1
+                fail_deploy "API health check timeout"
               fi
               echo "Reporting deployment to local API (127.0.0.1:4000)…"
               echo "Report payload:"
@@ -74,8 +108,8 @@ jobs:
                 --arg platform "OVH" \
                 --arg status "success" \
                 --arg environment "production" \
-                --arg branch "${{ github.event.workflow_run.head_branch || github.ref_name }}" \
-                --arg commitSha "${{ github.event.workflow_run.head_sha || github.sha }}" \
+                --arg branch "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}" \
+                --arg commitSha "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}" \
                 --arg externalId "gh-${{ github.run_id }}" \
                 '{projectId:$projectId,platform:$platform,status:$status,environment:$environment,branch:$branch,commitSha:$commitSha,externalId:$externalId,deployedAt:(now|todateiso8601)}' \
               )"
@@ -93,9 +127,12 @@ jobs:
               cat /tmp/devorbit-report.body || true
               if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
                 echo "Devorbit deployment report failed"
-                exit 1
+                fail_deploy "Deployment report HTTP ${http_code}"
               fi
             else
               echo "Skipping Devorbit deployment report (missing DEVORBIT_PROJECT_ID / DEVORBIT_DEPLOY_TOKEN secrets)."
             fi
+
+            trap - ERR
+            echo "Deploy finished successfully."
 
