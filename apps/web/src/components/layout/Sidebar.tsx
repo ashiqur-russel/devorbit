@@ -17,13 +17,16 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 h-screen w-64 bg-background border-r border-outline-variant/10 flex flex-col py-8 z-40 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
       <div className="px-6 mb-8">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low border border-outline-variant/10">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">⬡</div>
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 transition-colors hover:border-primary/30"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">⬡</div>
           <div>
-            <p className="text-sm font-bold text-on-surface font-headline uppercase tracking-wider">Core Engine</p>
-            <p className="text-xs text-outline font-mono">v1.0.0</p>
+            <p className="font-headline text-sm font-bold uppercase tracking-wider text-on-surface">Devorbit</p>
+            <p className="font-mono text-xs text-outline">v1.0.0</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -47,9 +50,12 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-6 pt-4 border-t border-outline-variant/10">
-        <button className="w-full py-2.5 bg-primary text-on-primary rounded-xl text-xs font-bold font-headline uppercase tracking-widest shadow-[0_0_15px_rgba(208,188,255,0.3)] hover:shadow-[0_0_25px_rgba(208,188,255,0.5)] transition-all">
+        <Link
+          href="/deployments"
+          className="block w-full rounded-xl bg-primary py-2.5 text-center text-xs font-bold uppercase tracking-widest text-on-primary font-headline shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all hover:shadow-[0_0_25px_rgba(208,188,255,0.5)]"
+        >
           + New Deployment
-        </button>
+        </Link>
       </div>
 
       <div className="px-6 mt-4 space-y-1">
