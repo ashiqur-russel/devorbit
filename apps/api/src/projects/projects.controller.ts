@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Types } from 'mongoose';
@@ -33,6 +33,22 @@ export class ProjectsController {
       ...body,
       teamId: new Types.ObjectId(body.teamId),
     });
+  }
+
+  @Patch(':projectId')
+  update(
+    @Param('projectId') projectId: string,
+    @Body()
+    body: {
+      name?: string;
+      description?: string;
+      repoOwner?: string;
+      repoName?: string;
+      repoProvider?: string;
+      vercelProjectId?: string;
+    },
+  ) {
+    return this.projectsService.update(projectId, body);
   }
 
   @Delete(':projectId')

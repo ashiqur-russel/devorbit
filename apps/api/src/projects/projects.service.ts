@@ -34,6 +34,25 @@ export class ProjectsService {
     return this.projectModel.find({ deletedAt: { $exists: false }, vercelProjectId: { $exists: true, $ne: '' } });
   }
 
+  async update(
+    projectId: string,
+    patch: Partial<Pick<Project, 'name' | 'description' | 'repoOwner' | 'repoName' | 'repoProvider' | 'vercelProjectId'>>,
+  ): Promise<Project> {
+    const id = new Types.ObjectId(projectId);
+
+    // Don't allow updating archived projects
+    const updated = await this.projectModel
+      .findOneAndUpdate(
+        { _id: id, deletedAt: { $exists: false } },
+        { $set: patch },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) throw new NotFoundException('Project not found');
+    return updated;
+  }
+
   async remove(projectId: string, opts?: { cascade?: boolean }): Promise<{ ok: true }> {
     const id = new Types.ObjectId(projectId);
     const cascade = Boolean(opts?.cascade);

@@ -28,6 +28,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!teamId) {
@@ -76,6 +77,22 @@ export default function ProjectsPage() {
       setError(e instanceof Error ? e.message : 'Failed to delete project');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const editProject = async (p: ProjectRow) => {
+    const vercelProjectId = prompt('Vercel project id (leave blank to clear)', p.vercelProjectId || '') ?? '';
+    const next = vercelProjectId.trim();
+
+    setSavingId(p._id);
+    setError(null);
+    try {
+      const updated = await api.projects.update(p._id, { vercelProjectId: next || undefined });
+      setProjects((prev) => prev.map((x) => (x._id === p._id ? { ...x, ...updated } : x)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to update project');
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -206,14 +223,24 @@ export default function ProjectsPage() {
                     <td className="px-6 py-4 text-xs font-bold text-primary">{(p.repoProvider || '—').toUpperCase()}</td>
                     <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{p.vercelProjectId || '—'}</td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => deleteProject(p)}
-                        disabled={deletingId === p._id}
-                        className="text-xs font-bold uppercase tracking-wider text-error hover:underline disabled:opacity-50"
-                      >
-                        {deletingId === p._id ? 'Deleting…' : 'Delete'}
-                      </button>
+                      <div className="flex justify-end gap-4">
+                        <button
+                          type="button"
+                          onClick={() => editProject(p)}
+                          disabled={savingId === p._id || deletingId === p._id}
+                          className="text-xs font-bold uppercase tracking-wider text-secondary hover:underline disabled:opacity-50"
+                        >
+                          {savingId === p._id ? 'Saving…' : 'Edit'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteProject(p)}
+                          disabled={deletingId === p._id || savingId === p._id}
+                          className="text-xs font-bold uppercase tracking-wider text-error hover:underline disabled:opacity-50"
+                        >
+                          {deletingId === p._id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

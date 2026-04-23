@@ -180,6 +180,17 @@ export const api = {
       repoName?: string;
       vercelProjectId?: string;
     }) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
+    update: (
+      projectId: string,
+      patch: {
+        name?: string;
+        repoProvider?: 'GITHUB' | 'GITLAB';
+        repoOwner?: string;
+        repoName?: string;
+        vercelProjectId?: string;
+      },
+    ) =>
+      request<any>(`/projects/${projectId}`, { method: 'PATCH', body: JSON.stringify(patch) }),
     remove: (projectId: string, cascade?: boolean) =>
       request<{ ok: true }>(`/projects/${projectId}${cascade ? '?cascade=1' : ''}`, { method: 'DELETE' }),
   },
