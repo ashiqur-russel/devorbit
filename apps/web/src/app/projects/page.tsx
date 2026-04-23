@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
+import { Modal } from '@/components/ui/Modal';
 
 type ProjectRow = {
   _id: string;
@@ -30,6 +31,15 @@ export default function ProjectsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
 
+  const [active, setActive] = useState<ProjectRow | null>(null);
+  const [draft, setDraft] = useState<{
+    name: string;
+    repoProvider: 'GITHUB' | 'GITLAB';
+    repoOwner: string;
+    repoName: string;
+    vercelProjectId: string;
+  } | null>(null);
+
   useEffect(() => {
     if (!teamId) {
       setProjects([]);
@@ -54,45 +64,82 @@ export default function ProjectsPage() {
     };
   }, [teamId]);
 
-  const deleteProject = async (p: ProjectRow) => {
-    const choice = prompt(
-      `Delete project "${p.name || p._id}"?\n\n` +
-        `Type:\n` +
-        `- ARCHIVE (recommended) to hide it (keeps pipelines/deployments)\n` +
-        `- DELETE to permanently delete it and ALL related pipelines/deployments\n\n` +
-        `Anything else cancels.`,
-    )
-      ?.trim()
-      .toUpperCase();
-    if (!choice) return;
+  const openDetails = (p: ProjectRow) => {
+    setError(null);
+    setActive(p);
+    setDraft({
+      name: p.name || '',
+      repoProvider: ((p.repoProvider || 'GITHUB').toUpperCase() === 'GITLAB' ? 'GITLAB' : 'GITHUB') as
+        | 'GITHUB'
+        | 'GITLAB',
+      repoOwner: p.repoOwner || '',
+      repoName: p.repoName || '',
+      vercelProjectId: p.vercelProjectId || '',
+    });
+  };
 
-    const cascade = choice === 'DELETE';
-    if (choice !== 'ARCHIVE' && choice !== 'DELETE') return;
-    setDeletingId(p._id);
+  const closeDetails = () => {
+    if (savingId || deletingId) return;
+    setActive(null);
+    setDraft(null);
+  };
+
+  const saveDetails = async () => {
+    if (!active || !draft) return;
+    setSavingId(active._id);
     setError(null);
     try {
-      await api.projects.remove(p._id, cascade);
-      setProjects((prev) => prev.filter((x) => x._id !== p._id));
+      const updated = await api.projects.update(active._id, {
+        name: draft.name.trim() || undefined,
+        repoProvider: draft.repoProvider,
+        repoOwner: draft.repoOwner.trim() || undefined,
+        repoName: draft.repoName.trim() || undefined,
+        vercelProjectId: draft.vercelProjectId.trim() || undefined,
+      });
+      setProjects((prev) => prev.map((x) => (x._id === active._id ? { ...x, ...updated } : x)));
+      setActive((p) => (p && p._id === active._id ? { ...p, ...updated } : p));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to delete project');
+      setError(e instanceof Error ? e.message : 'Failed to update project');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const archiveProject = async () => {
+    if (!active) return;
+    if (!confirm(`Archive "${active.name || active._id}"? You can re-create it later; data is preserved.`)) return;
+    setDeletingId(active._id);
+    setError(null);
+    try {
+      await api.projects.remove(active._id, false);
+      setProjects((prev) => prev.filter((x) => x._id !== active._id));
+      closeDetails();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to archive project');
     } finally {
       setDeletingId(null);
     }
   };
 
-  const editProject = async (p: ProjectRow) => {
-    const vercelProjectId = prompt('Vercel project id (leave blank to clear)', p.vercelProjectId || '') ?? '';
-    const next = vercelProjectId.trim();
+  const deleteCascadeProject = async () => {
+    if (!active) return;
+    const typed = prompt(
+      `PERMANENT DELETE\n\nThis will delete the project AND all related pipeline runs & deployments.\n\nType the project name to confirm:`,
+      '',
+    );
+    const expected = (active.name || '').trim();
+    if (!expected || (typed || '').trim() !== expected) return;
 
-    setSavingId(p._id);
+    setDeletingId(active._id);
     setError(null);
     try {
-      const updated = await api.projects.update(p._id, { vercelProjectId: next || undefined });
-      setProjects((prev) => prev.map((x) => (x._id === p._id ? { ...x, ...updated } : x)));
+      await api.projects.remove(active._id, true);
+      setProjects((prev) => prev.filter((x) => x._id !== active._id));
+      closeDetails();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to update project');
+      setError(e instanceof Error ? e.message : 'Failed to delete project');
     } finally {
-      setSavingId(null);
+      setDeletingId(null);
     }
   };
 
@@ -226,19 +273,19 @@ export default function ProjectsPage() {
                       <div className="flex justify-end gap-4">
                         <button
                           type="button"
-                          onClick={() => editProject(p)}
+                          onClick={() => openDetails(p)}
                           disabled={savingId === p._id || deletingId === p._id}
                           className="text-xs font-bold uppercase tracking-wider text-secondary hover:underline disabled:opacity-50"
                         >
-                          {savingId === p._id ? 'Saving…' : 'Edit'}
+                          Details
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteProject(p)}
+                          onClick={() => openDetails(p)}
                           disabled={deletingId === p._id || savingId === p._id}
-                          className="text-xs font-bold uppercase tracking-wider text-error hover:underline disabled:opacity-50"
+                          className="text-xs font-bold uppercase tracking-wider text-outline hover:text-on-surface hover:underline disabled:opacity-50"
                         >
-                          {deletingId === p._id ? 'Deleting…' : 'Delete'}
+                          Manage
                         </button>
                       </div>
                     </td>
@@ -249,6 +296,131 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={Boolean(active && draft)}
+        title={active?.name || 'Project'}
+        subtitle={active ? `Project ID: ${active._id}` : undefined}
+        onClose={closeDetails}
+        footer={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={archiveProject}
+                disabled={!active || Boolean(deletingId) || Boolean(savingId)}
+                className="rounded-xl bg-surface-container-highest px-4 py-2 text-xs font-bold uppercase tracking-widest text-on-surface transition-colors hover:bg-surface-bright disabled:opacity-50"
+              >
+                {deletingId ? 'Working…' : 'Archive'}
+              </button>
+              <button
+                type="button"
+                onClick={deleteCascadeProject}
+                disabled={!active || Boolean(deletingId) || Boolean(savingId)}
+                className="rounded-xl border border-error/30 bg-error/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-error transition-colors hover:bg-error/15 disabled:opacity-50"
+              >
+                Permanent delete
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={closeDetails}
+                disabled={Boolean(deletingId) || Boolean(savingId)}
+                className="rounded-xl border border-outline-variant/15 bg-transparent px-4 py-2 text-xs font-bold uppercase tracking-widest text-on-surface transition-colors hover:bg-white/5 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveDetails}
+                disabled={!active || !draft || Boolean(savingId) || Boolean(deletingId)}
+                className="rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-widest text-on-primary disabled:opacity-50"
+              >
+                {savingId ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        }
+      >
+        {active && draft ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-outline">Project name</label>
+                <input
+                  value={draft.name}
+                  onChange={(e) => setDraft((d) => (d ? { ...d, name: e.target.value } : d))}
+                  className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-sm text-on-surface"
+                  placeholder="portfolio"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-outline">Repo provider</label>
+                <select
+                  value={draft.repoProvider}
+                  onChange={(e) =>
+                    setDraft((d) => (d ? { ...d, repoProvider: e.target.value as 'GITHUB' | 'GITLAB' } : d))
+                  }
+                  className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-sm text-on-surface"
+                >
+                  <option value="GITHUB">GitHub</option>
+                  <option value="GITLAB">GitLab</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-outline">Repo owner</label>
+                <input
+                  value={draft.repoOwner}
+                  onChange={(e) => setDraft((d) => (d ? { ...d, repoOwner: e.target.value } : d))}
+                  className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-sm text-on-surface"
+                  placeholder="ashiqur-russel"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-outline">Repo name</label>
+                <input
+                  value={draft.repoName}
+                  onChange={(e) => setDraft((d) => (d ? { ...d, repoName: e.target.value } : d))}
+                  className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-sm text-on-surface"
+                  placeholder="portfolio"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-outline">Vercel project id</label>
+                <input
+                  value={draft.vercelProjectId}
+                  onChange={(e) => setDraft((d) => (d ? { ...d, vercelProjectId: e.target.value } : d))}
+                  className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 font-mono text-xs text-on-surface"
+                  placeholder="prj_..."
+                />
+                <p className="mt-2 text-[11px] text-on-surface-variant">
+                  This powers <span className="text-on-surface">Deployments</span> via the Vercel integration. Pipelines
+                  still come from GitHub Actions / GitLab CI.
+                </p>
+              </div>
+            </div>
+
+            {draft.repoOwner && draft.repoName ? (
+              <div className="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-outline">Linked repo</p>
+                <p className="mt-2 font-mono text-xs text-on-surface">
+                  {(draft.repoProvider === 'GITLAB' ? 'gitlab.com' : 'github.com') + '/' + draft.repoOwner + '/' + draft.repoName}
+                </p>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="rounded-xl border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">{error}</div>
+            ) : null}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }
