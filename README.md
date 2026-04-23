@@ -34,13 +34,16 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with **GitHub** or 
 
 | Flow | Details |
 |------|---------|
-| **Register (email)** | `POST /api/v1/auth/register` — body: `email`, `password` (8+ chars), `organizationName`, optional `displayName`. Creates **User**, **Organization** (you are **SUPER_ADMIN**), and a **Default** team. |
+| **Register (email)** | `POST /api/v1/auth/register` — body: `email`, `password` (8+ chars), optional `displayName`, and either **`organizationName`** (creates a new org + **Default** team; you are **SUPER_ADMIN**) or **`inviteToken`** (joins existing org; optional team from invite). Response includes **`organizationId`**. |
+| **Invite preview** | `GET /api/v1/invitations/preview/:token` — public; returns org/team names and invited email for **`/register?invite=…`**. |
+| **Email invite** | `POST /api/v1/organizations/:orgId/invites` — `{ "email", "teamId?" }` (**super admin** only). Sends registration link when mail is configured; otherwise returns `registerUrl`. Invitee must **not** already have an account. |
+| **Org dashboard** | `GET /api/v1/organizations/:orgId/dashboard` — JWT; members, teams, pending invites (admins/super admins see invites). |
 | **Login (email)** | `POST /api/v1/auth/login` — `email`, `password` → JWT (same storage as GitHub callback). |
 | **GitHub** | Unchanged. If a user registered with email first and uses the **same GitHub primary email**, the GitHub id is **linked** to that account. |
 | **New team** | `POST /api/v1/teams` — `{ "name", "organizationId" }` (must be org **SUPER_ADMIN** or **ADMIN**). |
 | **Add user to team** | `POST /api/v1/organizations/:orgId/teams/:teamId/members` — `{ "email" }`. Target user must **already exist** (register first). |
 | **Promote org admin** | `POST /api/v1/organizations/:orgId/admins` — `{ "email" }` (**super admin** only). Admins can then add members to teams. |
-| **UI** | Web: **`/register`**, **`/login`** (email + GitHub), **Settings → Organization** for promote/add. |
+| **UI** | Web: **`/register`** (with optional **`?invite=`**), **`/login`**, **Settings → Organization** (invite / promote / add), **Dashboard → Organizations** for org overview. |
 
 ---
 

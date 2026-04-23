@@ -9,12 +9,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { TeamsModule } from '../teams/teams.module';
+import { InvitationsModule } from '../invitations/invitations.module';
 
 @Module({
   imports: [
     UsersModule,
     OrganizationsModule,
     TeamsModule,
+    InvitationsModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],

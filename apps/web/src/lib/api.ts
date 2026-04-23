@@ -5,6 +5,26 @@ function getToken(): string {
   return localStorage.getItem('devorbit_token') || '';
 }
 
+function parseErrorMessage(path: string, res: Response, body: unknown): string {
+  let msg = `API ${res.status}: ${path}`;
+  if (body && typeof body === 'object' && 'message' in body) {
+    const m = (body as { message: unknown }).message;
+    if (typeof m === 'string') return m;
+    if (Array.isArray(m)) return m.map(String).join(', ');
+  }
+  return msg;
+}
+
+async function readJsonOrText(res: Response): Promise<unknown> {
+  const raw = await res.text();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return raw;
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_URL}/api/v1${path}`, {
     ...options,
@@ -14,8 +34,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...options.headers,
     },
   });
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
-  return res.json() as Promise<T>;
+  const body = await readJsonOrText(res);
+  if (!res.ok) throw new Error(parseErrorMessage(path, res, body));
+  return body as T;
 }
 
 /** Login/register — do not attach JWT. */
@@ -27,8 +48,9 @@ async function requestPublic<T>(path: string, options: RequestInit = {}): Promis
       ...options.headers,
     },
   });
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
-  return res.json() as Promise<T>;
+  const body = await readJsonOrText(res);
+  if (!res.ok) throw new Error(parseErrorMessage(path, res, body));
+  return body as T;
 }
 
 export const api = {
@@ -36,10 +58,11 @@ export const api = {
     register: (body: {
       email: string;
       password: string;
-      organizationName: string;
+      organizationName?: string;
+      inviteToken?: string;
       displayName?: string;
     }) =>
-      requestPublic<{ token: string }>('/auth/register', {
+      requestPublic<{ token: string; organizationId: string }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(body),
       }),
@@ -48,6 +71,7 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
+    me: () => request<{ _id: string; email?: string; name?: string }>('/auth/me'),
   },
   mail: {
     status: () => request<{ provider: 'gmail' | 'resend' | 'none'; configured: boolean }>('/mail/status'),
@@ -67,10 +91,29 @@ export const api = {
       request<any[]>(`/deployments/team/${teamId}/recent?limit=${limit}`),
     byProject: (projectId: string) => request<any[]>(`/deployments/project/${projectId}`),
   },
+  invitations: {
+    preview: (token: string) =>
+      requestPublic<{
+        organizationId: string;
+        email: string;
+        organizationName: string;
+        organizationSlug: string;
+        teamName: string | null;
+      }>(`/invitations/preview/${encodeURIComponent(token)}`),
+  },
   organizations: {
     mine: () => request<any[]>('/organizations'),
     create: (name: string) =>
       request<any>('/organizations', { method: 'POST', body: JSON.stringify({ name }) }),
+    dashboard: (orgId: string) => request<any>(`/organizations/${orgId}/dashboard`),
+    createInvite: (orgId: string, body: { email: string; teamId?: string }) =>
+      request<{
+        token: string;
+        registerUrl: string;
+        email: string;
+        expiresAt: string;
+        mailSent: boolean;
+      }>(`/organizations/${orgId}/invites`, { method: 'POST', body: JSON.stringify(body) }),
     addTeamMember: (orgId: string, teamId: string, email: string) =>
       request<{ ok: boolean }>(`/organizations/${orgId}/teams/${teamId}/members`, {
         method: 'POST',

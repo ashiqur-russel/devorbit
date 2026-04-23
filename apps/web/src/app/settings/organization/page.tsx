@@ -16,12 +16,17 @@ export default function OrganizationSettingsPage() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminMsg, setAdminMsg] = useState<string | null>(null);
   const [adminErr, setAdminErr] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [inviteErr, setInviteErr] = useState<string | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [o, t] = await Promise.all([api.organizations.mine(), api.teams.mine()]);
+      const [me, o, t] = await Promise.all([api.auth.me(), api.organizations.mine(), api.teams.mine()]);
+      setMyUserId(String(me._id));
       const ol = Array.isArray(o) ? o : [];
       const tl = Array.isArray(t) ? t : [];
       setOrgs(ol);
@@ -50,6 +55,40 @@ export default function OrganizationSettingsPage() {
   const teamsForOrg = orgId
     ? teams.filter((t) => t.organizationId && String(t.organizationId) === orgId)
     : [];
+
+  const memberUserId = (m: { userId: unknown }): string => {
+    const u = m.userId as { _id?: string } | string;
+    if (u && typeof u === 'object' && u._id) return String(u._id);
+    return String(u);
+  };
+
+  const selectedOrg = orgs.find((o) => String(o._id) === orgId);
+  const myRole =
+    myUserId && selectedOrg?.members?.length
+      ? (selectedOrg.members as { userId: unknown; role: string }[]).find((m) => memberUserId(m) === myUserId)?.role
+      : undefined;
+  const isSuperAdmin = myRole === 'SUPER_ADMIN';
+
+  const sendInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteMsg(null);
+    setInviteErr(null);
+    if (!orgId || !inviteEmail.trim()) return;
+    try {
+      const res = await api.organizations.createInvite(orgId, {
+        email: inviteEmail.trim(),
+        teamId: teamId || undefined,
+      });
+      setInviteMsg(
+        res.mailSent
+          ? `Invite email sent to ${res.email}. They can also open: ${res.registerUrl}`
+          : `Mail is not configured. Share this link with ${res.email}: ${res.registerUrl}`,
+      );
+      setInviteEmail('');
+    } catch (e: unknown) {
+      setInviteErr(e instanceof Error ? e.message : 'Failed to create invite');
+    }
+  };
 
   const promoteAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,8 +133,9 @@ export default function OrganizationSettingsPage() {
         <h1 className="mt-2 font-headline text-4xl font-black tracking-tighter text-on-surface">Organization &amp; team</h1>
         <p className="mt-2 text-sm text-on-surface-variant">
           The user who creates an organization is its <strong className="text-on-surface">super admin</strong>. Super
-          admins and org <strong className="text-on-surface">admins</strong> can add people to teams by email (account must
-          exist). Teams must belong to the organization (not legacy orphan teams).
+          admins can send <strong className="text-on-surface">email invites</strong> so people register and join (optional
+          team). Super admins and org <strong className="text-on-surface">admins</strong> can add existing accounts to a
+          team by email. Teams must belong to the organization.
         </p>
       </div>
 
@@ -107,6 +147,72 @@ export default function OrganizationSettingsPage() {
           No organizations yet. Use <Link href="/register" className="text-primary underline">Register</Link> to create
           one, or sign in with GitHub and complete onboarding (which creates an org + default team).
         </p>
+      )}
+
+      {orgs.length > 0 && isSuperAdmin && (
+        <form
+          onSubmit={sendInvite}
+          className="space-y-4 rounded-xl border border-outline-variant/10 bg-surface-container-low p-6"
+        >
+          <h2 className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface">
+            Invite by email (super admin)
+          </h2>
+          <p className="text-xs text-on-surface-variant">
+            Creates a 7-day registration link for this organization. If you pick a team below, they are added to that
+            team after they register. The email must not already have a Devorbit account.
+          </p>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-outline">Organization</label>
+            <select
+              value={orgId}
+              onChange={(e) => {
+                setOrgId(e.target.value);
+                setTeamId('');
+              }}
+              className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm"
+            >
+              {orgs.map((o) => (
+                <option key={String(o._id)} value={String(o._id)}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-outline">Team (optional)</label>
+            <select
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm"
+            >
+              <option value="">Org only — no default team</option>
+              {teamsForOrg.map((t) => (
+                <option key={String(t._id)} value={String(t._id)}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-outline">Invitee email</label>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm"
+              placeholder="new-teammate@company.com"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-on-primary"
+          >
+            Send invite
+          </button>
+          {inviteErr && <p className="text-xs font-mono text-error">{inviteErr}</p>}
+          {inviteMsg && <p className="text-xs text-tertiary break-all">{inviteMsg}</p>}
+        </form>
       )}
 
       {orgs.length > 0 && (

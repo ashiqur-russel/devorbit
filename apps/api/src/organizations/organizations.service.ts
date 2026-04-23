@@ -9,6 +9,7 @@ import { Model, Types } from 'mongoose';
 import { Organization } from './organization.schema';
 import { Team } from '../teams/team.schema';
 import { UsersService } from '../users/users.service';
+import { InvitationsService } from '../invitations/invitations.service';
 
 function slugify(name: string): string {
   const base = name
@@ -25,6 +26,7 @@ export class OrganizationsService {
     @InjectModel(Organization.name) private orgModel: Model<Organization>,
     @InjectModel(Team.name) private teamModel: Model<Team>,
     private usersService: UsersService,
+    private invitationsService: InvitationsService,
   ) {}
 
   async createWithSuperAdmin(userId: string, name: string): Promise<Organization> {
@@ -122,5 +124,76 @@ export class OrganizationsService {
     }
     await org.save();
     return { ok: true, userId: tid.toString(), role: 'ADMIN' };
+  }
+
+  async getDashboard(orgId: string, actorUserId: string) {
+    const orgCheck = await this.orgModel.findById(orgId);
+    if (!orgCheck) throw new NotFoundException('Organization not found');
+    if (!this.orgRole(orgCheck, actorUserId)) {
+      throw new ForbiddenException('Not a member of this organization');
+    }
+
+    const org = await this.orgModel
+      .findById(orgId)
+      .populate('members.userId', 'name email avatar')
+      .exec();
+    if (!org) throw new NotFoundException('Organization not found');
+
+    const teams = await this.teamModel.find({ organizationId: org._id }).sort({ name: 1 });
+    const role = this.orgRole(org, actorUserId);
+    const canSeeInvites = role === 'SUPER_ADMIN' || role === 'ADMIN';
+
+    let pendingInvites: Array<{
+      email: string;
+      expiresAt: Date;
+      teamId: string | null;
+      teamName: string | null;
+    }> = [];
+
+    if (canSeeInvites) {
+      const raw = await this.invitationsService.listPendingForOrg(orgId);
+      pendingInvites = await Promise.all(
+        raw.map(async (inv) => {
+          let teamName: string | null = null;
+          if (inv.teamId) {
+            const t = await this.teamModel.findById(inv.teamId).select('name');
+            teamName = t?.name ?? null;
+          }
+          return {
+            email: inv.email,
+            expiresAt: inv.expiresAt,
+            teamId: inv.teamId ? String(inv.teamId) : null,
+            teamName,
+          };
+        }),
+      );
+    }
+
+    const members = org.members.map((m) => {
+      const u = m.userId as unknown as { _id?: Types.ObjectId; name?: string; email?: string; avatar?: string };
+      const uid = u?._id ?? (m.userId as Types.ObjectId);
+      return {
+        role: m.role,
+        userId: String(uid),
+        name: typeof u?.name === 'string' ? u.name : undefined,
+        email: typeof u?.email === 'string' ? u.email : undefined,
+        avatar: typeof u?.avatar === 'string' ? u.avatar : undefined,
+      };
+    });
+
+    return {
+      organization: {
+        _id: org._id,
+        name: org.name,
+        slug: org.slug,
+        members,
+      },
+      teams: teams.map((t) => ({
+        _id: t._id,
+        name: t.name,
+        memberCount: Array.isArray(t.members) ? t.members.length : 0,
+      })),
+      pendingInvites,
+    };
   }
 }

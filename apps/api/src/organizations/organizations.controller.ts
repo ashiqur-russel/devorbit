@@ -1,9 +1,10 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { Types } from 'mongoose';
 import { OrganizationsService } from './organizations.service';
+import { InvitationsService } from '../invitations/invitations.service';
 
 class CreateOrganizationDto {
   @IsString()
@@ -22,12 +23,29 @@ class PromoteAdminDto {
   email: string;
 }
 
+class CreateInviteDto {
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  teamId?: string;
+}
+
 @ApiTags('organizations')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 @Controller('organizations')
 export class OrganizationsController {
-  constructor(private readonly organizationsService: OrganizationsService) {}
+  constructor(
+    private readonly organizationsService: OrganizationsService,
+    private readonly invitationsService: InvitationsService,
+  ) {}
+
+  @Get(':orgId/dashboard')
+  orgDashboard(@Param('orgId') orgId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
+    return this.organizationsService.getDashboard(orgId, req.user._id.toString());
+  }
 
   @Get()
   findMine(@Req() req: { user: { _id: Types.ObjectId } }) {
@@ -42,6 +60,20 @@ export class OrganizationsController {
   @Post(':orgId/admins')
   promoteAdmin(@Param('orgId') orgId: string, @Body() dto: PromoteAdminDto, @Req() req: { user: { _id: Types.ObjectId } }) {
     return this.organizationsService.promoteToOrgAdmin(orgId, req.user._id.toString(), dto.email);
+  }
+
+  @Post(':orgId/invites')
+  createInvite(
+    @Param('orgId') orgId: string,
+    @Body() dto: CreateInviteDto,
+    @Req() req: { user: { _id: Types.ObjectId } },
+  ) {
+    return this.invitationsService.createInvite({
+      organizationId: orgId,
+      actorUserId: req.user._id.toString(),
+      email: dto.email,
+      teamId: dto.teamId,
+    });
   }
 
   @Post(':orgId/teams/:teamId/members')

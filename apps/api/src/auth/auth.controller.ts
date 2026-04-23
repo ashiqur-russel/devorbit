@@ -14,8 +14,8 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
-    const user = await this.authService.registerWithOrganization(dto);
-    return { token: this.authService.signToken(String(user._id)) };
+    const { user, organizationId } = await this.authService.registerWithOrganization(dto);
+    return { token: this.authService.signToken(String(user._id)), organizationId };
   }
 
   @Post('login')

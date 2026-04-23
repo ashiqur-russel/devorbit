@@ -5,6 +5,7 @@ import { OrganizationsService } from './organizations.service';
 import { OrganizationsController } from './organizations.controller';
 import { Team, TeamSchema } from '../teams/team.schema';
 import { UsersModule } from '../users/users.module';
+import { InvitationsModule } from '../invitations/invitations.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UsersModule } from '../users/users.module';
       { name: Team.name, schema: TeamSchema },
     ]),
     UsersModule,
+    InvitationsModule,
   ],
   controllers: [OrganizationsController],
   providers: [OrganizationsService],
