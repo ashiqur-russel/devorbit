@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import type { PaginationMeta } from '@devorbit/types';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
 import { ListPagination } from '@/components/ui/list-pagination';
@@ -92,35 +93,29 @@ export default function DeploymentsPage() {
   const [projects, setProjects] = useState<{ _id: string; name?: string }[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [listMeta, setListMeta] = useState<PaginationMeta | null>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    setPage(1);
+  }, [teamId]);
+
+  useEffect(() => {
     if (!teamId) {
-      setDeployments([]);
       setProjects([]);
-      setLoading(false);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        setLoading(true);
-        setLoadError(null);
-        const [depRows, projRows] = await Promise.all([
-          api.deployments.recentByTeam(teamId, 250),
-          api.projects.byTeam(teamId),
-        ]);
-        if (cancelled) return;
-        setDeployments(Array.isArray(depRows) ? (depRows as DeploymentRow[]) : []);
-        setProjects(Array.isArray(projRows) ? projRows.map((p: any) => ({ _id: String(p._id), name: p.name })) : []);
-      } catch (e: unknown) {
+        const projRows = await api.projects.byTeam(teamId);
         if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Failed to load');
-          setDeployments([]);
+          setProjects(Array.isArray(projRows) ? projRows.map((p: { _id?: string; name?: string }) => ({ _id: String(p._id), name: p.name })) : []);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+      } catch {
+        if (!cancelled) setProjects([]);
       }
     })();
     return () => {
@@ -129,41 +124,55 @@ export default function DeploymentsPage() {
   }, [teamId]);
 
   useEffect(() => {
-    setPage(1);
-  }, [projectFilter, teamId]);
-
-  const filtered = useMemo(() => {
-    if (projectFilter === 'all') return deployments;
-    return deployments.filter((d) => {
-      const proj = projectOf(d);
-      if (proj?._id != null) return String(proj._id) === projectFilter;
-      if (typeof d.projectId === 'string') return d.projectId === projectFilter;
-      return false;
-    });
-  }, [deployments, projectFilter]);
-
-  const { paginated, listPage } = useMemo(() => {
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
-    const start = (safePage - 1) * PAGE_SIZE;
-    return { paginated: filtered.slice(start, start + PAGE_SIZE), listPage: safePage };
-  }, [filtered, page]);
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
-    if (safePage !== page) setPage(safePage);
-  }, [filtered.length, page]);
+    if (!teamId) {
+      setDeployments([]);
+      setListMeta(null);
+      setStatusCounts({});
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setLoadError(null);
+        const res = await api.deployments.recentByTeam(teamId, {
+          page,
+          limit: PAGE_SIZE,
+          projectId: projectFilter === 'all' ? undefined : projectFilter,
+          statusCounts: true,
+        });
+        if (cancelled) return;
+        setDeployments(Array.isArray(res.data) ? (res.data as DeploymentRow[]) : []);
+        setListMeta(res.meta);
+        setStatusCounts(res.aggregates?.statusCounts ?? {});
+        if (res.meta.page !== page) setPage(res.meta.page);
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : 'Failed to load');
+          setDeployments([]);
+          setListMeta(null);
+          setStatusCounts({});
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId, page, projectFilter]);
 
   const stats = useMemo(() => {
-    const list = filtered;
+    const c = statusCounts;
+    const total = listMeta?.total ?? 0;
     return {
-      total: list.length,
-      success: list.filter((d) => d.status === 'success').length,
-      failure: list.filter((d) => d.status === 'failure').length,
-      building: list.filter((d) => d.status === 'building').length,
+      total,
+      success: c.success ?? 0,
+      failure: c.failure ?? 0,
+      building: c.building ?? 0,
     };
-  }, [filtered]);
+  }, [statusCounts, listMeta]);
 
   return (
     <div className="space-y-10">
@@ -249,7 +258,10 @@ export default function DeploymentsPage() {
           <select
             id="dep-project"
             value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
+            onChange={(e) => {
+              setProjectFilter(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm text-on-surface"
           >
             <option value="all">All projects</option>
@@ -266,13 +278,13 @@ export default function DeploymentsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 px-6 py-4">
           <span className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Deployments</span>
           <span className="rounded-lg bg-surface-container-highest px-2 py-1 font-mono text-xs text-outline">
-            {loading ? '…' : `${filtered.length} in view`}
+            {loading ? '…' : `${listMeta?.total ?? 0} in view`}
           </span>
         </div>
 
         {loading ? (
           <div className="px-6 py-16 text-center text-sm text-outline">Loading…</div>
-        ) : !teamId ? null : filtered.length === 0 ? (
+        ) : !teamId ? null : deployments.length === 0 && (listMeta?.total ?? 0) === 0 ? (
           <div className="px-6 py-16 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-high text-2xl">
               ↑
@@ -297,7 +309,7 @@ export default function DeploymentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {paginated.map((dep) => {
+                {deployments.map((dep) => {
                   const st = dep.status || 'building';
                   return (
                     <tr key={dep._id} className="transition-colors hover:bg-white/[0.04]">
@@ -340,7 +352,7 @@ export default function DeploymentsPage() {
               </tbody>
             </table>
           </div>
-          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+          <ListPagination page={page} pageSize={PAGE_SIZE} total={listMeta?.total ?? 0} onPageChange={setPage} />
           </>
         )}
       </div>

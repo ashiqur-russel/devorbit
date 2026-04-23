@@ -4,3 +4,4 @@ export * from './server';
 export * from './pipeline';
 export * from './deployment';
 export * from './metric';
+export * from './pagination';

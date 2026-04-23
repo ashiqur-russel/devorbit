@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import type { PaginationMeta } from '@devorbit/types';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
 import { ListPagination } from '@/components/ui/list-pagination';
@@ -99,35 +100,29 @@ export default function PipelinesPage() {
   const [projects, setProjects] = useState<{ _id: string; name?: string }[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [listMeta, setListMeta] = useState<PaginationMeta | null>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    setPage(1);
+  }, [teamId]);
+
+  useEffect(() => {
     if (!teamId) {
-      setRuns([]);
       setProjects([]);
-      setLoading(false);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        setLoading(true);
-        setLoadError(null);
-        const [pipeRows, projRows] = await Promise.all([
-          api.pipelines.recentByTeam(teamId, 250),
-          api.projects.byTeam(teamId),
-        ]);
-        if (cancelled) return;
-        setRuns(Array.isArray(pipeRows) ? (pipeRows as PipelineRunRow[]) : []);
-        setProjects(Array.isArray(projRows) ? projRows.map((p: any) => ({ _id: String(p._id), name: p.name })) : []);
-      } catch (e: unknown) {
+        const projRows = await api.projects.byTeam(teamId);
         if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Failed to load');
-          setRuns([]);
+          setProjects(Array.isArray(projRows) ? projRows.map((p: { _id?: string; name?: string }) => ({ _id: String(p._id), name: p.name })) : []);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+      } catch {
+        if (!cancelled) setProjects([]);
       }
     })();
     return () => {
@@ -136,41 +131,55 @@ export default function PipelinesPage() {
   }, [teamId]);
 
   useEffect(() => {
-    setPage(1);
-  }, [projectFilter, teamId]);
-
-  const filtered = useMemo(() => {
-    if (projectFilter === 'all') return runs;
-    return runs.filter((r) => {
-      const proj = projectOf(r);
-      if (proj?._id != null) return String(proj._id) === projectFilter;
-      if (typeof r.projectId === 'string') return r.projectId === projectFilter;
-      return false;
-    });
-  }, [runs, projectFilter]);
-
-  const { paginated, listPage } = useMemo(() => {
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
-    const start = (safePage - 1) * PAGE_SIZE;
-    return { paginated: filtered.slice(start, start + PAGE_SIZE), listPage: safePage };
-  }, [filtered, page]);
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
-    if (safePage !== page) setPage(safePage);
-  }, [filtered.length, page]);
+    if (!teamId) {
+      setRuns([]);
+      setListMeta(null);
+      setStatusCounts({});
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setLoadError(null);
+        const res = await api.pipelines.recentByTeam(teamId, {
+          page,
+          limit: PAGE_SIZE,
+          projectId: projectFilter === 'all' ? undefined : projectFilter,
+          statusCounts: true,
+        });
+        if (cancelled) return;
+        setRuns(Array.isArray(res.data) ? (res.data as PipelineRunRow[]) : []);
+        setListMeta(res.meta);
+        setStatusCounts(res.aggregates?.statusCounts ?? {});
+        if (res.meta.page !== page) setPage(res.meta.page);
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : 'Failed to load');
+          setRuns([]);
+          setListMeta(null);
+          setStatusCounts({});
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId, page, projectFilter]);
 
   const stats = useMemo(() => {
-    const list = filtered;
+    const c = statusCounts;
+    const total = listMeta?.total ?? 0;
     return {
-      total: list.length,
-      success: list.filter((r) => r.status === 'success').length,
-      failure: list.filter((r) => r.status === 'failure').length,
-      active: list.filter((r) => r.status === 'running' || r.status === 'pending').length,
+      total,
+      success: c.success ?? 0,
+      failure: c.failure ?? 0,
+      active: (c.running ?? 0) + (c.pending ?? 0),
     };
-  }, [filtered]);
+  }, [statusCounts, listMeta]);
 
   return (
     <div className="space-y-10">
@@ -247,7 +256,10 @@ export default function PipelinesPage() {
           <select
             id="pipe-project"
             value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
+            onChange={(e) => {
+              setProjectFilter(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm text-on-surface"
           >
             <option value="all">All projects</option>
@@ -264,13 +276,13 @@ export default function PipelinesPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 px-6 py-4">
           <span className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Pipeline runs</span>
           <span className="rounded-lg bg-surface-container-highest px-2 py-1 font-mono text-xs text-outline">
-            {loading ? '…' : `${filtered.length} in view`}
+            {loading ? '…' : `${listMeta?.total ?? 0} in view`}
           </span>
         </div>
 
         {loading ? (
           <div className="px-6 py-16 text-center text-sm text-outline">Loading…</div>
-        ) : !teamId ? null : filtered.length === 0 ? (
+        ) : !teamId ? null : runs.length === 0 && (listMeta?.total ?? 0) === 0 ? (
           <div className="px-6 py-16 text-center">
             <p className="text-on-surface-variant text-sm">No pipeline runs for this view yet.</p>
             <p className="mt-2 text-xs text-outline">
@@ -295,7 +307,7 @@ export default function PipelinesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {paginated.map((run) => {
+                {runs.map((run) => {
                   const ext = externalRunUrl(run);
                   const st = run.status || 'pending';
                   return (
@@ -340,7 +352,7 @@ export default function PipelinesPage() {
               </tbody>
             </table>
           </div>
-          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+          <ListPagination page={page} pageSize={PAGE_SIZE} total={listMeta?.total ?? 0} onPageChange={setPage} />
           </>
         )}
       </div>

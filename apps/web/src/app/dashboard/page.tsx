@@ -41,15 +41,15 @@ export default function DashboardPage() {
         setStatsLoading(true);
         const [sv, pipes, deps] = await Promise.all([
           api.servers.byTeam(teamId),
-          api.pipelines.recentByTeam(teamId, 50),
-          api.deployments.recentByTeam(teamId, 50),
+          api.pipelines.recentByTeam(teamId, { page: 1, limit: 50 }),
+          api.deployments.recentByTeam(teamId, { page: 1, limit: 50 }),
         ]);
         if (cancelled) return;
         setServers(sv as ServerRow[]);
-        const pipeArr = Array.isArray(pipes) ? pipes : [];
-        const depArr = Array.isArray(deps) ? deps : [];
-        setPipelineCount(pipeArr.length);
-        setDeploymentCount(depArr.length);
+        const pipeArr = Array.isArray(pipes.data) ? pipes.data : [];
+        const depArr = Array.isArray(deps.data) ? deps.data : [];
+        setPipelineCount(pipes.meta?.total ?? pipeArr.length);
+        setDeploymentCount(deps.meta?.total ?? depArr.length);
         setPipelinePreview(pipeArr.slice(0, 5) as PipelinePreview[]);
         setDeploymentPreview(depArr.slice(0, 5) as DeploymentPreview[]);
       } catch (e: unknown) {

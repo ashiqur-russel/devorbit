@@ -119,15 +119,15 @@ export default function GettingStartedPage() {
           api.integrations.list(teamId),
           api.projects.byTeam(teamId),
           api.servers.byTeam(teamId),
-          api.pipelines.recentByTeam(teamId, 20),
-          api.deployments.recentByTeam(teamId, 50),
+          api.pipelines.recentByTeam(teamId, { page: 1, limit: 20 }),
+          api.deployments.recentByTeam(teamId, { page: 1, limit: 50 }),
         ]);
         if (cancelled) return;
         setIntegrations(Array.isArray(ints) ? (ints as IntegrationRow[]) : []);
         setProjects(Array.isArray(projs) ? (projs as ProjectRow[]) : []);
         setServers(Array.isArray(sv) ? (sv as ServerRow[]) : []);
-        setPipelines(Array.isArray(pipes) ? (pipes as PipelineRow[]) : []);
-        setDeployments(Array.isArray(deps) ? (deps as DeploymentRow[]) : []);
+        setPipelines(Array.isArray(pipes.data) ? (pipes.data as PipelineRow[]) : []);
+        setDeployments(Array.isArray(deps.data) ? (deps.data as DeploymentRow[]) : []);
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load');
       } finally {

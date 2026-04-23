@@ -1,4 +1,24 @@
+import type { PaginatedResponse } from '@devorbit/types';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+/** Options for `GET /{pipelines|deployments}/team/:teamId/recent` (offset pagination + optional aggregates). */
+export type TeamRecentListOptions = {
+  page?: number;
+  limit?: number;
+  projectId?: string;
+  /** When true, API includes `aggregates.statusCounts` for the full filtered set. */
+  statusCounts?: boolean;
+};
+
+function teamRecentSearchParams(opts?: TeamRecentListOptions): string {
+  const page = opts?.page ?? 1;
+  const limit = opts?.limit ?? 20;
+  const sp = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (opts?.projectId) sp.set('projectId', opts.projectId);
+  if (opts?.statusCounts) sp.set('statusCounts', '1');
+  return sp.toString();
+}
 
 function getToken(): string {
   if (typeof window === 'undefined') return '';
@@ -82,13 +102,13 @@ export const api = {
       }),
   },
   pipelines: {
-    recentByTeam: (teamId: string, limit = 50) =>
-      request<any[]>(`/pipelines/team/${teamId}/recent?limit=${limit}`),
+    recentByTeam: (teamId: string, opts?: TeamRecentListOptions) =>
+      request<PaginatedResponse<unknown>>(`/pipelines/team/${teamId}/recent?${teamRecentSearchParams(opts)}`),
     byProject: (projectId: string) => request<any[]>(`/pipelines/project/${projectId}`),
   },
   deployments: {
-    recentByTeam: (teamId: string, limit = 50) =>
-      request<any[]>(`/deployments/team/${teamId}/recent?limit=${limit}`),
+    recentByTeam: (teamId: string, opts?: TeamRecentListOptions) =>
+      request<PaginatedResponse<unknown>>(`/deployments/team/${teamId}/recent?${teamRecentSearchParams(opts)}`),
     byProject: (projectId: string) => request<any[]>(`/deployments/project/${projectId}`),
   },
   invitations: {

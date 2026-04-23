@@ -71,6 +71,14 @@ export class ProjectsService {
     return proj;
   }
 
+  /** Ensure an active project exists and belongs to the given team (for team-scoped list filters). */
+  async assertProjectBelongsToTeam(projectId: string, teamId: string): Promise<Project> {
+    const proj = await this.findActiveById(projectId);
+    if (!proj) throw new NotFoundException('Project not found');
+    if (proj.teamId.toString() !== teamId) throw new ForbiddenException('Project does not belong to this team');
+    return proj;
+  }
+
   async remove(projectId: string, opts?: { cascade?: boolean }): Promise<{ ok: true }> {
     const id = new Types.ObjectId(projectId);
     const cascade = Boolean(opts?.cascade);

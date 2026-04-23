@@ -4,6 +4,8 @@ import { Types } from 'mongoose';
 import { PipelinesService } from './pipelines.service';
 import { TeamsService } from '../teams/teams.service';
 import { ProjectsService } from '../projects/projects.service';
+import { TeamRecentQueryDto } from '../common/dto/team-recent-query.dto';
+import { normalizeTeamRecentQuery } from '../common/dto/team-recent-query.util';
 
 @Controller('pipelines')
 @UseGuards(AuthGuard('jwt'))
@@ -18,10 +20,17 @@ export class PipelinesController {
   async findRecentByTeam(
     @Param('teamId') teamId: string,
     @Req() req: { user: { _id: Types.ObjectId } },
-    @Query('limit') limit?: string,
+    @Query() query: TeamRecentQueryDto,
   ) {
     await this.teamsService.assertCanAccessTeam(req.user._id.toString(), teamId);
-    return this.pipelinesService.findRecentByTeam(teamId, limit ? parseInt(limit, 10) : 50);
+    const q = normalizeTeamRecentQuery(query);
+    if (q.projectId) {
+      await this.projectsService.assertProjectBelongsToTeam(q.projectId, teamId);
+    }
+    return this.pipelinesService.findRecentByTeamPaginated(teamId, q.page, q.limit, {
+      projectId: q.projectId,
+      statusCounts: q.statusCounts,
+    });
   }
 
   @Get('project/:projectId')
