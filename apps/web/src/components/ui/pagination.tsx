@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import type { VariantProps } from 'class-variance-authority';
+
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 
@@ -48,8 +50,9 @@ PaginationItem.displayName = 'PaginationItem';
 
 type PaginationLinkProps = {
   isActive?: boolean;
-} & Pick<React.ComponentProps<'button'>, 'size'> &
-  React.ComponentProps<'button'>;
+  /** Visual size from `buttonVariants` (not the native HTML `size` attribute). */
+  size?: VariantProps<typeof buttonVariants>['size'];
+} & Omit<React.ComponentProps<'button'>, 'size'>;
 
 const PaginationLink = ({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) => (
   <button
