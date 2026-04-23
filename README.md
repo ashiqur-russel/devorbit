@@ -106,9 +106,9 @@ The **Deploy to VPS** workflow (`.github/workflows/deploy-vps.yml`) runs after *
 
 1. In the repo: **Settings → Environments → New environment** → name **`production`**.
 2. Under **Deployment protection rules**, enable **Required reviewers** and add yourself (or a team).
-3. After each green **CI** run on `main`, open **Actions**, find the pending **Deploy to VPS** run, then **Review deployments → Approve and deploy**.
+3. After each green **CI** run on `main`, open **Actions** → workflow **Deploy to VPS** → open the **newest run**. The button is **not** on the repository home page. In the run’s **left sidebar**, click the job named **`deploy`** (wait until it shows *Waiting for approval*). On the right, use **Review pending deployments** (or **Review deployments**) → select **`production`** → **Approve and deploy**.
 
-You can still start a deploy anytime from **Actions → Deploy to VPS → Run workflow** (`workflow_dispatch`). If the `production` environment has no protection rules, the job runs immediately.
+You can still start a deploy anytime from **Actions → Deploy to VPS → Run workflow** (`workflow_dispatch`). If the `production` environment has **no** protection rules, the **`deploy`** job runs immediately and you will **not** see an approve button (add **Required reviewers** on the environment to enable it).
 
 ---
 

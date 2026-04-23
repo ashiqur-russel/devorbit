@@ -23,7 +23,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Runs first (no environment gate) so the run log shows where to click when deploy is waiting.
+  approval-hint:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    steps:
+      - name: Where to approve (if deploy is waiting)
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "If the next job (deploy) waits for you, GitHub does NOT put the button on the repo home page."
+          echo ""
+          echo "1) Stay on THIS workflow run (Deploy to VPS)."
+          echo "2) In the LEFT sidebar, click the job named:  deploy   (not approval-hint)."
+          echo "3) On the right, look for a yellow panel: 'Review pending deployments' or"
+          echo "   'Waiting for approval' → click  Review deployments  → check  production  → Approve and deploy."
+          echo ""
+          echo "This run URL (bookmark it while waiting):"
+          echo "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          echo ""
+          echo "If you never see Review deployments: Settings → Environments → production"
+          echo "→ ensure 'Required reviewers' is ON and your user is listed."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
   deploy:
+    needs: [approval-hint]
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 20
