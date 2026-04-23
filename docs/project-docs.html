@@ -1293,11 +1293,13 @@
       <h4>Run the monitoring agent on any server</h4>
       <p>Get your agent token from <strong>Settings → Agent Setup</strong> in the dashboard, then on your server:</p>
       <div class="code-block">
-<span class="cmd">npx @devorbit/agent start \</span>
+<span class="cmd">npx devorbit-agent start \</span>
   <span class="cmd">--token=</span><span class="val">your-agent-token</span> <span class="cmd">\</span>
-  <span class="cmd">--api=</span><span class="val">http://localhost:4000</span>
-<span class="comment"># metrics stream to the dashboard within 5 seconds</span>
+  <span class="cmd">--api=</span><span class="val">http://localhost:4000</span> <span class="cmd">\</span>
+  <span class="cmd">--background</span>
+<span class="comment"># metrics stream to the dashboard within ~5 seconds; CLI prints “Stop with: kill &lt;pid&gt;”</span>
       </div>
+      <p style="margin-top:12px;"><strong>To stop the agent:</strong> run <code>pgrep -af devorbit-agent</code>, note the first number (PID), then <code>kill &lt;PID&gt;</code>. Confirm with <code>pgrep -af devorbit-agent</code> (no output = stopped). If you use PM2/systemd/Docker, stop it there instead. See <code>docs/agent-guide.html</code> and the in-app <strong>Settings → Agent</strong> page for full steps.</p>
     </div>
   </div>
 

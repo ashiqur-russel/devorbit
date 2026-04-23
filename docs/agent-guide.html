@@ -728,6 +728,20 @@
   </div>
 </div>
 
+<div class="info-box" style="margin-top:28px;">
+  <strong>Finding the PID and killing the agent (<code>npx … --background</code>)</strong><br/>
+  When you start with <code>--background</code>, the CLI prints <code>Stop with: kill &lt;pid&gt;</code> — that number is the process ID. If you no longer have that output:
+  <div class="code-block" style="margin-top:12px;"><span class="cmd">pgrep</span> <span class="flag">-af</span> <span class="val">devorbit-agent</span>
+<span class="comment"># first column = PID, rest = full command (node …/devorbit-agent/dist/cli.js …)</span>
+
+<span class="cmd">kill</span> <span class="val">24539</span>   <span class="comment"># replace 24539 with your PID</span>
+<span class="cmd">pgrep</span> <span class="flag">-af</span> <span class="val">devorbit-agent</span>   <span class="comment"># expect no output when stopped</span>
+
+<span class="cmd">kill</span> <span class="flag">-9</span> <span class="val">24539</span>   <span class="comment"># only if normal kill does not stop it</span></div>
+  Alternatives: <code>ps aux | grep devorbit</code> (PID is usually column 2 on Linux) or <code>pkill -f devorbit-agent</code> (stops every matching process — use carefully on shared hosts).<br/><br/>
+  If the agent respawns, something is supervising it (PM2, systemd, cron, Docker) — remove that configuration, not only the PID. Do not copy the same <code>dev_…</code> token to a new server; register a new server in Devorbit for a replacement machine.
+</div>
+
 <!-- ═══════════════════════════ 6. TOKEN MANAGEMENT ══════════════ -->
 <div class="section-header">
   <h2>6 · Token Management</h2>

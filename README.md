@@ -127,6 +127,34 @@ Get your `AGENT_TOKEN` from **Settings → Agent Setup** in the dashboard. The a
 - Auto-reconnects on disconnect
 - Requires only Node.js — zero other dependencies
 
+### Stopping or removing the agent
+
+The default install is a **Node process**, not a system package. To stop it:
+
+1. **Find the PID** (first number in the output):
+
+   ```bash
+   pgrep -af devorbit-agent
+   ```
+
+   Example: `24539 /usr/bin/node .../devorbit-agent/dist/cli.js start ...` → PID is **`24539`**.
+
+   Alternatives: `ps aux | grep -i devorbit` (ignore the `grep` line), or use the **`Stop with: kill …`** line printed when you started with `--background`.
+
+2. **Stop the process:**
+
+   ```bash
+   kill 24539
+   ```
+
+   Replace `24539` with your PID. Confirm with `pgrep -af devorbit-agent` (no output = stopped). If it does not exit, use `kill -9 24539`.
+
+3. **If you use PM2, systemd, cron, or Docker** to run the agent, stop/remove that unit or job instead—killing one PID is not enough if something restarts it.
+
+4. **Token hygiene:** do not reuse the same `dev_…` token on another machine; register a new server in Devorbit for a replacement host.
+
+In the dashboard, **Settings → Agent** also summarizes these steps.
+
 ---
 
 ## Tech Stack
