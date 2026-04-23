@@ -14,8 +14,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node ./node_modules/typescript/bin/tsc -p .",
-    "dev": "node ./node_modules/typescript/bin/tsc -p . --watch --noEmit",
+    "build": "node ./run-tsc.cjs -p .",
+    "dev": "node ./run-tsc.cjs -p . --watch --noEmit",
     "start": "node dist/cli.js",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build"
