@@ -17,7 +17,15 @@ export default function LandingPage() {
           <div className="hidden md:flex gap-8 items-center">
             <a href="#features" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium uppercase tracking-wider">Features</a>
             <a href="#how-it-works" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium uppercase tracking-wider">How it works</a>
-            <a href="https://github.com" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium uppercase tracking-wider">GitHub</a>
+            <a href="#faq" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium uppercase tracking-wider">FAQ</a>
+            <a
+              href="https://github.com/ashiqur-russel/devorbit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium uppercase tracking-wider"
+            >
+              GitHub
+            </a>
           </div>
           <Link
             href="/login"
@@ -60,7 +68,9 @@ export default function LandingPage() {
                 Start Monitoring Free
               </Link>
               <a
-                href="https://github.com"
+                href="https://github.com/ashiqur-russel/devorbit"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-8 py-4 glass-panel border border-outline-variant/30 text-secondary font-bold rounded-xl text-lg uppercase tracking-tighter hover:bg-surface-container-highest transition-all font-headline"
               >
                 Star on GitHub
@@ -115,6 +125,33 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* How it works (anchor for nav) */}
+        <section id="how-it-works" className="py-24 max-w-7xl mx-auto px-6 scroll-mt-24">
+          <div className="text-center mb-12 space-y-3">
+            <span className="text-secondary font-bold tracking-widest uppercase text-xs">Self-host</span>
+            <h2 className="text-4xl font-black tracking-tighter font-headline">How it works</h2>
+            <p className="text-on-surface-variant max-w-2xl mx-auto text-sm leading-relaxed">
+              Run the API and web with Docker Compose on your VPS, connect GitHub, install the agent on your servers, and
+              use the dashboard for pipelines, metrics, and deployments.
+            </p>
+          </div>
+          <ol className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto list-none">
+            {[
+              { step: '01', title: 'Deploy stack', body: 'Clone the repo, copy `.env`, run `docker compose up` (or your VPS playbook).' },
+              { step: '02', title: 'Connect & agent', body: 'Sign in with GitHub or email, create a team, then run the one-line agent install on each server.' },
+              { step: '03', title: 'Ship with confidence', body: 'Watch CI runs, server health, and deployment records from one place.' },
+            ].map((row) => (
+              <li key={row.step} className="relative pl-14 border-l border-outline-variant/20">
+                <span className="absolute left-0 top-0 -translate-x-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high border border-outline-variant/30 text-xs font-black font-headline text-primary">
+                  {row.step}
+                </span>
+                <h3 className="text-lg font-bold font-headline mb-2">{row.title}</h3>
+                <p className="text-on-surface-variant text-sm leading-relaxed">{row.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         {/* Stats */}
         <section className="border-y border-outline-variant/10">
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-outline-variant/10">
@@ -129,6 +166,66 @@ export default function LandingPage() {
                 <div className={`text-xs uppercase tracking-widest text-${s.color} mt-2`}>{s.label}</div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="py-24 bg-surface-container-low border-y border-outline-variant/10 scroll-mt-24">
+          <div className="max-w-3xl mx-auto px-6">
+            <div className="text-center mb-12 space-y-3">
+              <span className="text-tertiary font-bold tracking-widest uppercase text-xs">Self-hosted CD</span>
+              <h2 className="text-4xl font-black tracking-tighter font-headline">FAQ</h2>
+              <p className="text-on-surface-variant text-sm max-w-xl mx-auto leading-relaxed">
+                Quick answers for operators hosting DevOrbit and using GitHub Actions to release to a VPS.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {[
+                {
+                  q: 'Where is the manual “deploy” button?',
+                  a: (
+                    <>
+                      It lives in GitHub, not inside this app. Open the{' '}
+                      <a
+                        href="https://github.com/ashiqur-russel/devorbit/actions/workflows/deploy-vps.yml"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline-offset-2 hover:underline font-medium"
+                      >
+                        Deploy to VPS
+                      </a>{' '}
+                      workflow → use <strong className="text-on-surface">Run workflow</strong> (branch <code className="text-xs bg-surface-container-highest px-1.5 py-0.5 rounded">main</code>) after{' '}
+                      <strong className="text-on-surface">CI</strong> is green on that commit. That single click starts the SSH + Docker deploy on your server.
+                    </>
+                  ),
+                },
+                {
+                  q: 'Does pushing to main automatically deploy to my server?',
+                  a: 'No. CI runs on push; production deploy only runs when someone runs the Deploy to VPS workflow manually. That keeps releases intentional.',
+                },
+                {
+                  q: 'What should I do before clicking Run workflow?',
+                  a: 'Wait for the latest CI run on main to finish successfully, merge anything you need, then trigger deploy so the VPS pulls the same commit you verified in CI.',
+                },
+                {
+                  q: 'What if the deploy job fails?',
+                  a: 'The workflow is configured to roll the VPS git checkout and Docker stack back to the last working commit when a step fails (see the repo workflow file). Check Actions logs and docker compose logs on the server.',
+                },
+              ].map((item) => (
+                <details
+                  key={item.q}
+                  className="group rounded-xl border border-outline-variant/20 bg-surface-container-high/40 open:bg-surface-container-high/80 transition-colors"
+                >
+                  <summary className="cursor-pointer list-none px-5 py-4 font-headline font-bold text-sm uppercase tracking-wide text-on-surface flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+                    <span>{item.q}</span>
+                    <span className="text-primary text-lg leading-none group-open:rotate-45 transition-transform">+</span>
+                  </summary>
+                  <div className="px-5 pb-4 pt-0 text-on-surface-variant text-sm leading-relaxed border-t border-outline-variant/10">
+                    {item.a}
+                  </div>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -153,10 +250,17 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-outline-variant/10 py-8 bg-surface-container-lowest">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <span className="text-outline text-xs uppercase tracking-widest">© 2025 DevOrbit. MIT License.</span>
+          <span className="text-outline text-xs uppercase tracking-widest">© 2026 DevOrbit. MIT License.</span>
           <div className="flex gap-8 text-xs uppercase tracking-widest text-outline">
-            <a href="#" className="hover:text-primary transition-colors">Docs</a>
-            <a href="#" className="hover:text-primary transition-colors">GitHub</a>
+            <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
+            <a
+              href="https://github.com/ashiqur-russel/devorbit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
+              GitHub
+            </a>
             <a href="#" className="hover:text-primary transition-colors">Privacy</a>
           </div>
         </div>
