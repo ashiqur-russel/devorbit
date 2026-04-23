@@ -174,7 +174,7 @@ export class InvitationsService {
 
     const already = org.members.some((m) => m.userId.equals(uid));
     if (!already) {
-      org.members.push({ userId: uid, role: 'MEMBER' });
+      org.members.push({ userId: uid, role: 'MEMBER', canCreateTeams: false, canInstallAgent: false });
       await org.save();
     }
 

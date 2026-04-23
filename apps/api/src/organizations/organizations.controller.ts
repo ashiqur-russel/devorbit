@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { Types } from 'mongoose';
 import { OrganizationsService } from './organizations.service';
 import { InvitationsService } from '../invitations/invitations.service';
@@ -32,6 +32,17 @@ class CreateInviteDto {
   teamId?: string;
 }
 
+class SetAdminCapabilitiesDto {
+  @IsEmail()
+  email: string;
+
+  @IsBoolean()
+  canCreateTeams: boolean;
+
+  @IsBoolean()
+  canInstallAgent: boolean;
+}
+
 @ApiTags('organizations')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
@@ -41,6 +52,12 @@ export class OrganizationsController {
     private readonly organizationsService: OrganizationsService,
     private readonly invitationsService: InvitationsService,
   ) {}
+
+  /** Current user: whether they may create teams / register agents (for UI and bootstrap). */
+  @Get('me/provisioning')
+  myProvisioning(@Req() req: { user: { _id: Types.ObjectId } }) {
+    return this.organizationsService.getMyProvisioningCapabilities(req.user._id.toString());
+  }
 
   @Get(':orgId/dashboard')
   orgDashboard(@Param('orgId') orgId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
@@ -60,6 +77,15 @@ export class OrganizationsController {
   @Post(':orgId/admins')
   promoteAdmin(@Param('orgId') orgId: string, @Body() dto: PromoteAdminDto, @Req() req: { user: { _id: Types.ObjectId } }) {
     return this.organizationsService.promoteToOrgAdmin(orgId, req.user._id.toString(), dto.email);
+  }
+
+  @Post(':orgId/admin-capabilities')
+  setAdminCapabilities(
+    @Param('orgId') orgId: string,
+    @Body() dto: SetAdminCapabilitiesDto,
+    @Req() req: { user: { _id: Types.ObjectId } },
+  ) {
+    return this.organizationsService.setAdminCapabilities(orgId, req.user._id.toString(), dto);
   }
 
   @Post(':orgId/invites')

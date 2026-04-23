@@ -20,6 +20,11 @@ export default function OrganizationSettingsPage() {
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
   const [inviteErr, setInviteErr] = useState<string | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [capEmail, setCapEmail] = useState('');
+  const [capCanCreate, setCapCanCreate] = useState(false);
+  const [capCanInstall, setCapCanInstall] = useState(false);
+  const [capMsg, setCapMsg] = useState<string | null>(null);
+  const [capErr, setCapErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,6 +105,24 @@ export default function OrganizationSettingsPage() {
     }
   };
 
+  const saveAdminCapabilities = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCapMsg(null);
+    setCapErr(null);
+    if (!orgId || !capEmail.trim()) return;
+    try {
+      await api.organizations.setAdminCapabilities(orgId, {
+        email: capEmail.trim(),
+        canCreateTeams: capCanCreate,
+        canInstallAgent: capCanInstall,
+      });
+      setCapMsg('Updated workspace/agent permissions for that org admin.');
+      setCapEmail('');
+    } catch (e: unknown) {
+      setCapErr(e instanceof Error ? e.message : 'Failed');
+    }
+  };
+
   const promoteAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminMsg(null);
@@ -142,10 +165,10 @@ export default function OrganizationSettingsPage() {
         </Link>
         <h1 className="mt-2 font-headline text-4xl font-black tracking-tighter text-on-surface">Organization &amp; team</h1>
         <p className="mt-2 text-sm text-on-surface-variant">
-          The user who creates an organization is its <strong className="text-on-surface">super admin</strong>. Super
-          admins can send <strong className="text-on-surface">email invites</strong> so people register and join (optional
-          team). Super admins and org <strong className="text-on-surface">admins</strong> can add existing accounts to a
-          team by email. Teams must belong to the organization.
+          The user who creates an organization is its <strong className="text-on-surface">super admin</strong>. Only
+          super admins may create extra organizations, create teams (workspaces), and register the Devorbit agent—unless
+          they grant those rights to an <strong className="text-on-surface">org admin</strong> below. Super admins can
+          send email invites; org admins and super admins can add existing users to teams.
         </p>
       </div>
 
@@ -249,6 +272,65 @@ export default function OrganizationSettingsPage() {
           </button>
           {adminErr && <p className="text-xs font-mono text-error">{adminErr}</p>}
           {adminMsg && <p className="text-xs text-tertiary">{adminMsg}</p>}
+        </form>
+      )}
+
+      {orgs.length > 0 && isSuperAdmin && (
+        <form
+          onSubmit={saveAdminCapabilities}
+          className="space-y-4 rounded-xl border border-outline-variant/10 bg-surface-container-low p-6"
+        >
+          <h2 className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface">
+            Org admin powers (super admin only)
+          </h2>
+          <p className="text-xs text-on-surface-variant">
+            The user must already be an <strong className="text-on-surface">organization admin</strong> (use Promote
+            org admin first). Then choose whether they may create teams/workspaces or register the agent on servers.
+          </p>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-outline">Organization</label>
+            <select
+              value={orgId}
+              onChange={(e) => {
+                setOrgId(e.target.value);
+                setTeamId('');
+              }}
+              className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm"
+            >
+              {orgs.map((o) => (
+                <option key={String(o._id)} value={String(o._id)}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-outline">Org admin email</label>
+            <input
+              type="email"
+              value={capEmail}
+              onChange={(e) => setCapEmail(e.target.value)}
+              placeholder="admin@company.com"
+              className="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-sm"
+              required
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-on-surface">
+            <input type="checkbox" checked={capCanCreate} onChange={(e) => setCapCanCreate(e.target.checked)} />
+            May create teams (workspaces) in this organization
+          </label>
+          <label className="flex items-center gap-2 text-sm text-on-surface">
+            <input type="checkbox" checked={capCanInstall} onChange={(e) => setCapCanInstall(e.target.checked)} />
+            May install / register Devorbit agent (servers) for teams in this organization
+          </label>
+          <button
+            type="submit"
+            className="rounded-xl bg-surface-container-highest px-5 py-2 text-xs font-bold uppercase tracking-widest text-on-surface"
+          >
+            Save admin permissions
+          </button>
+          {capErr && <p className="text-xs font-mono text-error">{capErr}</p>}
+          {capMsg && <p className="text-xs text-tertiary">{capMsg}</p>}
         </form>
       )}
 

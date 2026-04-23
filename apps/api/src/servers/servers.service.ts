@@ -3,12 +3,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { randomBytes } from 'crypto';
 import { Server } from './server.schema';
+import { OrganizationsService } from '../organizations/organizations.service';
 
 @Injectable()
 export class ServersService {
-  constructor(@InjectModel(Server.name) private serverModel: Model<Server>) {}
+  constructor(
+    @InjectModel(Server.name) private serverModel: Model<Server>,
+    private organizationsService: OrganizationsService,
+  ) {}
 
-  async register(teamId: string, name: string): Promise<Server> {
+  async register(teamId: string, name: string, actorUserId: string): Promise<Server> {
+    await this.organizationsService.assertCanRegisterServer(actorUserId, teamId);
     const agentToken = `dev_${randomBytes(16).toString('hex')}`;
     return this.serverModel.create({ teamId, name, agentToken });
   }

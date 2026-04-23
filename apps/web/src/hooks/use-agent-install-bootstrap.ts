@@ -26,6 +26,8 @@ export function useAgentInstallBootstrap() {
         const workspace =
           (typeof window !== 'undefined' && localStorage.getItem('devorbit_workspace_name')) || 'My team';
 
+        const ctx = await api.organizations.myProvisioning();
+
         const orgs = await api.organizations.mine().catch(() => []);
         const orgList = Array.isArray(orgs) ? orgs : [];
         let orgId = orgList[0]?._id ? String(orgList[0]._id) : '';
@@ -40,6 +42,11 @@ export function useAgentInstallBootstrap() {
         }
 
         if (!tid) {
+          if (!ctx.canCreateTeams) {
+            throw new Error(
+              'You do not have permission to create a team or organization. Ask your organization super admin to grant workspace creation or add you to a team.',
+            );
+          }
           if (!orgId) {
             const o = await api.organizations.create(workspace);
             if (cancelled) return;
@@ -58,6 +65,11 @@ export function useAgentInstallBootstrap() {
 
         let tok = '';
         if (list.length === 0) {
+          if (!ctx.canInstallAgent) {
+            throw new Error(
+              'You do not have permission to register the Devorbit agent on a server. Ask your organization super admin (or an admin with install access) to run agent setup, or to grant you install permission.',
+            );
+          }
           const s = await api.servers.register(tid, 'Primary server');
           tok = s.agentToken;
         } else {

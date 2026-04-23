@@ -3,12 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Team } from './team.schema';
 import { Organization } from '../organizations/organization.schema';
+import { OrganizationsService } from '../organizations/organizations.service';
 
 @Injectable()
 export class TeamsService {
   constructor(
     @InjectModel(Team.name) private teamModel: Model<Team>,
     @InjectModel(Organization.name) private orgModel: Model<Organization>,
+    private organizationsService: OrganizationsService,
   ) {}
 
   private slugify(name: string): string {
@@ -28,12 +30,13 @@ export class TeamsService {
     const org = await this.orgModel.findById(organizationId);
     if (!org) throw new NotFoundException('Organization not found');
 
-    const oid = new Types.ObjectId(ownerId);
-    const m = org.members.find((x) => x.userId.equals(oid));
-    if (!m || !['SUPER_ADMIN', 'ADMIN'].includes(m.role)) {
-      throw new ForbiddenException('Only organization super admins or admins can create teams');
+    if (!this.organizationsService.canMemberCreateTeams(org, ownerId)) {
+      throw new ForbiddenException(
+        'Only the organization super admin or an org admin with workspace-creation permission can create teams.',
+      );
     }
 
+    const oid = new Types.ObjectId(ownerId);
     const slug = this.slugify(name);
     return this.teamModel.create({
       name: name.trim(),

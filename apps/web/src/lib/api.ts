@@ -103,9 +103,23 @@ export const api = {
   },
   organizations: {
     mine: () => request<any[]>('/organizations'),
+    myProvisioning: () =>
+      request<{
+        canCreateTeams: boolean;
+        canInstallAgent: boolean;
+        hasAnyOrganization: boolean;
+      }>('/organizations/me/provisioning'),
     create: (name: string) =>
       request<any>('/organizations', { method: 'POST', body: JSON.stringify({ name }) }),
     dashboard: (orgId: string) => request<any>(`/organizations/${orgId}/dashboard`),
+    setAdminCapabilities: (
+      orgId: string,
+      body: { email: string; canCreateTeams: boolean; canInstallAgent: boolean },
+    ) =>
+      request<{ ok: boolean; userId: string; canCreateTeams: boolean; canInstallAgent: boolean }>(
+        `/organizations/${orgId}/admin-capabilities`,
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
     createInvite: (orgId: string, body: { email: string; teamId?: string }) =>
       request<{
         token: string;

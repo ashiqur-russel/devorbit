@@ -4,6 +4,7 @@ import { TeamsService } from './teams.service';
 import { TeamsController } from './teams.controller';
 import { Team, TeamSchema } from './team.schema';
 import { Organization, OrganizationSchema } from '../organizations/organization.schema';
+import { OrganizationsModule } from '../organizations/organizations.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Organization, OrganizationSchema } from '../organizations/organization.
       { name: Team.name, schema: TeamSchema },
       { name: Organization.name, schema: OrganizationSchema },
     ]),
+    OrganizationsModule,
   ],
   providers: [TeamsService],
   controllers: [TeamsController],
