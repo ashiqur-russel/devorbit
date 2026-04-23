@@ -24,16 +24,29 @@ export function useAgentInstallBootstrap() {
         setProvisioning(true);
         setError(null);
 
-        const teams = await api.teams.mine();
-        if (cancelled) return;
+        const workspace =
+          (typeof window !== 'undefined' && localStorage.getItem('devorbit_workspace_name')) || 'My team';
 
-        let tid = teams[0]?._id ? String(teams[0]._id) : '';
+        const orgs = await api.organizations.mine().catch(() => []);
+        const orgList = Array.isArray(orgs) ? orgs : [];
+        let orgId = orgList[0]?._id ? String(orgList[0]._id) : '';
+
+        const teamsList = await api.teams.mine();
+        if (cancelled) return;
+        const tl = Array.isArray(teamsList) ? teamsList : [];
+
+        let tid = tl[0]?._id ? String(tl[0]._id) : '';
+        if (!orgId && tl[0]?.organizationId) {
+          orgId = String(tl[0].organizationId);
+        }
+
         if (!tid) {
-          const workspace =
-            (typeof window !== 'undefined' &&
-              localStorage.getItem('devorbit_workspace_name')) ||
-            'My team';
-          const created = await api.teams.create(workspace);
+          if (!orgId) {
+            const o = await api.organizations.create(workspace);
+            if (cancelled) return;
+            orgId = String(o._id);
+          }
+          const created = await api.teams.create(workspace, orgId);
           if (cancelled) return;
           tid = String(created._id);
         }

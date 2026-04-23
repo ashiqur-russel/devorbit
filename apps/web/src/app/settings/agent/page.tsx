@@ -33,9 +33,12 @@ export default function AgentSetupPage() {
         <p className="text-on-surface-variant text-sm mt-2 max-w-lg">
           Connect your local hardware or cloud infrastructure to DevOrbit. Deploying the lightweight agent enables real-time node orchestration and metrics piping.
         </p>
-        <p className="mt-3 text-xs text-outline">
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-outline">
           <Link href="/settings/email" className="font-bold text-primary underline hover:text-secondary">
-            Test transactional email (Gmail or Resend)
+            Test email (Gmail / Resend)
+          </Link>
+          <Link href="/settings/organization" className="font-bold text-primary underline hover:text-secondary">
+            Organization &amp; add teammate
           </Link>
         </p>
       </div>

@@ -1,7 +1,9 @@
-import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginEmailDto } from './dto/login-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -9,6 +11,18 @@ export class AuthController {
     private authService: AuthService,
     private config: ConfigService,
   ) {}
+
+  @Post('register')
+  async register(@Body() dto: RegisterDto) {
+    const user = await this.authService.registerWithOrganization(dto);
+    return { token: this.authService.signToken(String(user._id)) };
+  }
+
+  @Post('login')
+  async loginEmail(@Body() dto: LoginEmailDto) {
+    const user = await this.authService.loginWithEmail(dto.email, dto.password);
+    return { token: this.authService.signToken(String(user._id)) };
+  }
 
   @Get('github')
   @UseGuards(AuthGuard('github'))

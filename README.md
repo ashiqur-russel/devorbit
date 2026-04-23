@@ -11,7 +11,7 @@ Open-source DevOps monitoring dashboard for developers and students. Monitor CI/
 - **Pipeline Tracking** — GitHub Actions and GitLab CI run history, status, and duration
 - **Server Health** — Real-time CPU, RAM, disk, and network metrics via a lightweight Node.js agent
 - **Deployment Registry** — Track Vercel and custom deployments with live status
-- **Team Workspaces** — GitHub OAuth login, invite members, manage projects per team
+- **Organizations & teams** — Email/password or GitHub sign-in; org creator is **super admin**; org admins can add existing users to teams
 - **Real-time Updates** — Socket.io pushes agent metrics to the dashboard every 5 seconds
 
 ---
@@ -28,7 +28,19 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
+Open [http://localhost:3000](http://localhost:3000). Sign in with **GitHub** or **email** (`/login`); new orgs via **`/register`**.
+
+### Accounts & organizations
+
+| Flow | Details |
+|------|---------|
+| **Register (email)** | `POST /api/v1/auth/register` — body: `email`, `password` (8+ chars), `organizationName`, optional `displayName`. Creates **User**, **Organization** (you are **SUPER_ADMIN**), and a **Default** team. |
+| **Login (email)** | `POST /api/v1/auth/login` — `email`, `password` → JWT (same storage as GitHub callback). |
+| **GitHub** | Unchanged. If a user registered with email first and uses the **same GitHub primary email**, the GitHub id is **linked** to that account. |
+| **New team** | `POST /api/v1/teams` — `{ "name", "organizationId" }` (must be org **SUPER_ADMIN** or **ADMIN**). |
+| **Add user to team** | `POST /api/v1/organizations/:orgId/teams/:teamId/members` — `{ "email" }`. Target user must **already exist** (register first). |
+| **Promote org admin** | `POST /api/v1/organizations/:orgId/admins` — `{ "email" }` (**super admin** only). Admins can then add members to teams. |
+| **UI** | Web: **`/register`**, **`/login`** (email + GitHub), **Settings → Organization** for promote/add. |
 
 ---
 

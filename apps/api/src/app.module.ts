@@ -13,6 +13,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { JobsModule } from './jobs/jobs.module';
 import { MailModule } from './mail/mail.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MailModule } from './mail/mail.module';
     AuthModule,
     UsersModule,
     TeamsModule,
+    OrganizationsModule,
     ProjectsModule,
     IntegrationsModule,
     ServersModule,

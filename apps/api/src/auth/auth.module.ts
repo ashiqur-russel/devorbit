@@ -7,10 +7,14 @@ import { AuthService } from './auth.service';
 import { GithubStrategy } from './strategies/github.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { OrganizationsModule } from '../organizations/organizations.module';
+import { TeamsModule } from '../teams/teams.module';
 
 @Module({
   imports: [
     UsersModule,
+    OrganizationsModule,
+    TeamsModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],

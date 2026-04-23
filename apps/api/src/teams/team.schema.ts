@@ -13,6 +13,9 @@ const TeamMemberSchema = SchemaFactory.createForClass(TeamMember);
 
 @Schema({ timestamps: true })
 export class Team extends Document {
+  @Prop({ type: Types.ObjectId, ref: 'Organization' })
+  organizationId: Types.ObjectId;
+
   @Prop({ required: true })
   name: string;
 

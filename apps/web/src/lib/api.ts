@@ -18,7 +18,37 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Login/register — do not attach JWT. */
+async function requestPublic<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${API_URL}/api/v1${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  return res.json() as Promise<T>;
+}
+
 export const api = {
+  auth: {
+    register: (body: {
+      email: string;
+      password: string;
+      organizationName: string;
+      displayName?: string;
+    }) =>
+      requestPublic<{ token: string }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    loginEmail: (email: string, password: string) =>
+      requestPublic<{ token: string }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      }),
+  },
   mail: {
     status: () => request<{ provider: 'gmail' | 'resend' | 'none'; configured: boolean }>('/mail/status'),
     sendTest: (to?: string) =>
@@ -37,10 +67,28 @@ export const api = {
       request<any[]>(`/deployments/team/${teamId}/recent?limit=${limit}`),
     byProject: (projectId: string) => request<any[]>(`/deployments/project/${projectId}`),
   },
+  organizations: {
+    mine: () => request<any[]>('/organizations'),
+    create: (name: string) =>
+      request<any>('/organizations', { method: 'POST', body: JSON.stringify({ name }) }),
+    addTeamMember: (orgId: string, teamId: string, email: string) =>
+      request<{ ok: boolean }>(`/organizations/${orgId}/teams/${teamId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+    promoteAdmin: (orgId: string, email: string) =>
+      request<{ ok: boolean }>(`/organizations/${orgId}/admins`, {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+  },
   teams: {
     mine: () => request<any[]>('/teams'),
-    create: (name: string) =>
-      request<any>('/teams', { method: 'POST', body: JSON.stringify({ name }) }),
+    create: (name: string, organizationId: string) =>
+      request<any>('/teams', {
+        method: 'POST',
+        body: JSON.stringify({ name, organizationId }),
+      }),
   },
   servers: {
     byTeam: (teamId: string) => request<any[]>(`/servers/team/${teamId}`),
