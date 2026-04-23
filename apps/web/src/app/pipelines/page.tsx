@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
+import { ListPagination } from '@/components/ui/list-pagination';
 
 type PopulatedProject = {
   _id?: string;
@@ -90,11 +91,14 @@ function externalRunUrl(row: PipelineRunRow): string | null {
   return `https://github.com/${p.repoOwner}/${p.repoName}/actions/runs/${runId}`;
 }
 
+const PAGE_SIZE = 10;
+
 export default function PipelinesPage() {
   const { teamId, loading: teamLoading } = useTeamId();
   const [runs, setRuns] = useState<PipelineRunRow[]>([]);
   const [projects, setProjects] = useState<{ _id: string; name?: string }[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -111,7 +115,7 @@ export default function PipelinesPage() {
         setLoading(true);
         setLoadError(null);
         const [pipeRows, projRows] = await Promise.all([
-          api.pipelines.recentByTeam(teamId, 80),
+          api.pipelines.recentByTeam(teamId, 250),
           api.projects.byTeam(teamId),
         ]);
         if (cancelled) return;
@@ -131,6 +135,10 @@ export default function PipelinesPage() {
     };
   }, [teamId]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [projectFilter, teamId]);
+
   const filtered = useMemo(() => {
     if (projectFilter === 'all') return runs;
     return runs.filter((r) => {
@@ -140,6 +148,19 @@ export default function PipelinesPage() {
       return false;
     });
   }, [runs, projectFilter]);
+
+  const { paginated, listPage } = useMemo(() => {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    return { paginated: filtered.slice(start, start + PAGE_SIZE), listPage: safePage };
+  }, [filtered, page]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    if (safePage !== page) setPage(safePage);
+  }, [filtered.length, page]);
 
   const stats = useMemo(() => {
     const list = filtered;
@@ -243,7 +264,7 @@ export default function PipelinesPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 px-6 py-4">
           <span className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Pipeline runs</span>
           <span className="rounded-lg bg-surface-container-highest px-2 py-1 font-mono text-xs text-outline">
-            {loading ? '…' : `${filtered.length} shown`}
+            {loading ? '…' : `${filtered.length} in view`}
           </span>
         </div>
 
@@ -258,6 +279,7 @@ export default function PipelinesPage() {
             </p>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px]">
               <thead className="border-b border-outline-variant/10">
@@ -273,7 +295,7 @@ export default function PipelinesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {filtered.map((run) => {
+                {paginated.map((run) => {
                   const ext = externalRunUrl(run);
                   const st = run.status || 'pending';
                   return (
@@ -318,6 +340,8 @@ export default function PipelinesPage() {
               </tbody>
             </table>
           </div>
+          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

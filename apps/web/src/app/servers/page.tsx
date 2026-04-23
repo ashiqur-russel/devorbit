@@ -1,15 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
+import { ListPagination } from '@/components/ui/list-pagination';
 
 type ServerRow = { _id: string; name: string; status?: string };
+
+const PAGE_SIZE = 10;
 
 export default function ServersPage() {
   const { teamId, loading: teamLoading } = useTeamId();
   const [servers, setServers] = useState<ServerRow[]>([]);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!teamId) return;
@@ -31,6 +35,23 @@ export default function ServersPage() {
       clearInterval(iv);
     };
   }, [teamId]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [teamId]);
+
+  const { paginatedServers, listPage } = useMemo(() => {
+    const totalPages = Math.max(1, Math.ceil(servers.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    return { paginatedServers: servers.slice(start, start + PAGE_SIZE), listPage: safePage };
+  }, [servers, page]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(servers.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    if (safePage !== page) setPage(safePage);
+  }, [servers.length, page]);
 
   return (
     <div className="space-y-8">
@@ -74,28 +95,31 @@ export default function ServersPage() {
       )}
 
       {teamId && servers.length > 0 && (
-        <ul className="space-y-3">
-          {servers.map((s) => (
-            <li key={s._id}>
-              <Link
-                href={`/servers/${s._id}`}
-                className="flex items-center justify-between rounded-xl border border-outline-variant/10 bg-surface-container-low px-6 py-4 hover:border-primary/30 transition-colors"
-              >
-                <div>
-                  <p className="font-headline font-bold text-on-surface">{s.name}</p>
-                  <p className="text-xs text-on-surface-variant font-mono mt-1">{s._id}</p>
-                </div>
-                <span
-                  className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${
-                    s.status === 'online' ? 'bg-secondary/20 text-secondary' : 'bg-surface-container-highest text-outline'
-                  }`}
+        <div className="overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-low">
+          <ul className="divide-y divide-outline-variant/10">
+            {paginatedServers.map((s) => (
+              <li key={s._id}>
+                <Link
+                  href={`/servers/${s._id}`}
+                  className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-white/[0.04]"
                 >
-                  {s.status || 'offline'}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  <div>
+                    <p className="font-headline font-bold text-on-surface">{s.name}</p>
+                    <p className="mt-1 font-mono text-xs text-on-surface-variant">{s._id}</p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${
+                      s.status === 'online' ? 'bg-secondary/20 text-secondary' : 'bg-surface-container-highest text-outline'
+                    }`}
+                  >
+                    {s.status || 'offline'}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={servers.length} onPageChange={setPage} />
+        </div>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
+import { ListPagination } from '@/components/ui/list-pagination';
 
 type PopulatedProject = {
   _id?: string;
@@ -83,11 +84,14 @@ function serverLabel(row: DeploymentRow) {
   return '—';
 }
 
+const PAGE_SIZE = 10;
+
 export default function DeploymentsPage() {
   const { teamId, loading: teamLoading } = useTeamId();
   const [deployments, setDeployments] = useState<DeploymentRow[]>([]);
   const [projects, setProjects] = useState<{ _id: string; name?: string }[]>([]);
   const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -104,7 +108,7 @@ export default function DeploymentsPage() {
         setLoading(true);
         setLoadError(null);
         const [depRows, projRows] = await Promise.all([
-          api.deployments.recentByTeam(teamId, 80),
+          api.deployments.recentByTeam(teamId, 250),
           api.projects.byTeam(teamId),
         ]);
         if (cancelled) return;
@@ -124,6 +128,10 @@ export default function DeploymentsPage() {
     };
   }, [teamId]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [projectFilter, teamId]);
+
   const filtered = useMemo(() => {
     if (projectFilter === 'all') return deployments;
     return deployments.filter((d) => {
@@ -133,6 +141,19 @@ export default function DeploymentsPage() {
       return false;
     });
   }, [deployments, projectFilter]);
+
+  const { paginated, listPage } = useMemo(() => {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    return { paginated: filtered.slice(start, start + PAGE_SIZE), listPage: safePage };
+  }, [filtered, page]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    if (safePage !== page) setPage(safePage);
+  }, [filtered.length, page]);
 
   const stats = useMemo(() => {
     const list = filtered;
@@ -245,7 +266,7 @@ export default function DeploymentsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 px-6 py-4">
           <span className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Deployments</span>
           <span className="rounded-lg bg-surface-container-highest px-2 py-1 font-mono text-xs text-outline">
-            {loading ? '…' : `${filtered.length} shown`}
+            {loading ? '…' : `${filtered.length} in view`}
           </span>
         </div>
 
@@ -262,6 +283,7 @@ export default function DeploymentsPage() {
             </p>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px]">
               <thead className="border-b border-outline-variant/10">
@@ -275,7 +297,7 @@ export default function DeploymentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {filtered.map((dep) => {
+                {paginated.map((dep) => {
                   const st = dep.status || 'building';
                   return (
                     <tr key={dep._id} className="transition-colors hover:bg-white/[0.04]">
@@ -318,6 +340,8 @@ export default function DeploymentsPage() {
               </tbody>
             </table>
           </div>
+          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

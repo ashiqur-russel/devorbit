@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
 import { Modal } from '@/components/ui/Modal';
+import { ListPagination } from '@/components/ui/list-pagination';
 
 type ProjectRow = {
   _id: string;
@@ -22,6 +23,8 @@ function repoLabel(p: ProjectRow) {
   const base = provider === 'GITLAB' ? 'gitlab.com' : 'github.com';
   return `${base}/${p.repoOwner}/${p.repoName}`;
 }
+
+const PAGE_SIZE = 10;
 
 export default function ProjectsPage() {
   const { teamId, loading: teamLoading } = useTeamId();
@@ -41,6 +44,7 @@ export default function ProjectsPage() {
     repoName: string;
     vercelProjectId: string;
   } | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!teamId) {
@@ -64,6 +68,10 @@ export default function ProjectsPage() {
     return () => {
       cancelled = true;
     };
+  }, [teamId]);
+
+  useEffect(() => {
+    setPage(1);
   }, [teamId]);
 
   const openDetails = (p: ProjectRow) => {
@@ -163,6 +171,19 @@ export default function ProjectsPage() {
 
   const linkedCount = useMemo(() => projects.filter((p) => p.repoOwner && p.repoName).length, [projects]);
 
+  const { paginatedProjects, listPage } = useMemo(() => {
+    const totalPages = Math.max(1, Math.ceil(projects.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    return { paginatedProjects: projects.slice(start, start + PAGE_SIZE), listPage: safePage };
+  }, [projects, page]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(projects.length / PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    if (safePage !== page) setPage(safePage);
+  }, [projects.length, page]);
+
   return (
     <div className="space-y-10">
       <div
@@ -237,7 +258,7 @@ export default function ProjectsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 px-6 py-4">
           <span className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Your projects</span>
           <span className="rounded-lg bg-surface-container-highest px-2 py-1 font-mono text-xs text-outline">
-            {loading ? '…' : `${projects.length} shown`}
+            {loading ? '…' : `${projects.length} total`}
           </span>
         </div>
 
@@ -269,6 +290,7 @@ export default function ProjectsPage() {
             </div>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px]">
               <thead className="border-b border-outline-variant/10">
@@ -281,7 +303,7 @@ export default function ProjectsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {projects.map((p) => (
+                {paginatedProjects.map((p) => (
                   <tr key={p._id} className="transition-colors hover:bg-white/[0.04]">
                     <td className="px-6 py-4 text-sm font-medium text-on-surface">{p.name || 'Project'}</td>
                     <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{repoLabel(p)}</td>
@@ -312,6 +334,8 @@ export default function ProjectsPage() {
               </tbody>
             </table>
           </div>
+          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={projects.length} onPageChange={setPage} />
+          </>
         )}
       </div>
 
