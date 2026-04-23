@@ -1,12 +1,27 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.schema';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+
+  /** Align DB indexes with schema (e.g. githubId partial unique). Safe to run on startup; logs on failure. */
+  async onModuleInit() {
+    try {
+      await this.userModel.syncIndexes();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(
+        `User.syncIndexes failed: ${msg}. If you see E11000 on githubId:null, run in MongoDB: ` +
+          `db.users.updateMany({githubId:null},[{$unset:"githubId"}]); db.users.dropIndex("githubId_1"); then restart.`,
+      );
+    }
+  }
 
   async findOrCreate(profile: {
     githubId: string;

@@ -69,6 +69,19 @@ Copy `.env.example` to `.env` and set the following:
 
 Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers).
 
+### MongoDB: `E11000 duplicate key … githubId: null` on user insert
+
+Older deployments used a **sparse unique** index on `githubId`. MongoDB still indexes explicit **`githubId: null`**, so only one email-only user could exist. The API now uses a **partial unique** index (unique only when `githubId` is a non-empty string) and calls **`User.syncIndexes()`** on startup.
+
+If startup or registration still fails against an old index, run once in `mongosh` on the `devorbit` database:
+
+```js
+db.users.updateMany({ githubId: null }, [{ $unset: 'githubId' }]);
+db.users.dropIndex('githubId_1');
+```
+
+Then restart the API so Mongoose recreates the correct index.
+
 ### Nginx on port 80 (OVH / firewalls that block `:3000` and `:4000`)
 
 Some clouds only allow **22, 80, 443** from the internet. Your Amuvee runbooks often use **Nginx as a reverse proxy**; Devorbit needs the same pattern, but with **three upstreams**: Next.js (`/`), Nest REST + Swagger (`/api/`), and Socket.io (`/socket.io/`).
