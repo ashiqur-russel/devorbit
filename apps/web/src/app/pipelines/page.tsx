@@ -175,10 +175,10 @@ export default function PipelinesPage() {
           </p>
         </div>
         <Link
-          href="/settings/integrations"
+          href="/projects/new?provider=GITHUB"
           className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-on-primary font-headline transition-all hover:shadow-[0_0_18px_rgba(208,188,255,0.35)]"
         >
-          + Connect repo
+          + New project (link repo)
         </Link>
       </div>
 

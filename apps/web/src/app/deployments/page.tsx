@@ -168,12 +168,20 @@ export default function DeploymentsPage() {
             them.
           </p>
         </div>
-        <Link
-          href="/settings/integrations"
-          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-on-primary font-headline transition-all hover:shadow-[0_0_18px_rgba(208,188,255,0.35)]"
-        >
-          + Connect platform
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/projects/new"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-on-primary font-headline transition-all hover:shadow-[0_0_18px_rgba(208,188,255,0.35)]"
+          >
+            + New project
+          </Link>
+          <Link
+            href="/settings/integrations"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-surface-container-highest px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-on-surface font-headline transition-colors hover:bg-surface-bright"
+          >
+            Integrations
+          </Link>
+        </div>
       </div>
 
       {!teamLoading && !teamId && (

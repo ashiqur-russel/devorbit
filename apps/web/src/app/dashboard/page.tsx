@@ -139,7 +139,7 @@ export default function DashboardPage() {
         </div>
         {pipelineCount === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-on-surface-variant">
-            No pipelines yet for this team. Connect GitHub or GitLab under Settings → Integrations.
+            No pipelines yet for this team. First connect GitHub under Settings → Integrations, then create a Project and link a repo.
           </div>
         ) : (
           <ul className="divide-y divide-outline-variant/5">

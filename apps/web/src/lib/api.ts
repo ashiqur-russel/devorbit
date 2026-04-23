@@ -175,6 +175,7 @@ export const api = {
     create: (data: {
       teamId: string;
       name: string;
+      repoProvider?: 'GITHUB' | 'GITLAB';
       repoOwner?: string;
       repoName?: string;
       vercelProjectId?: string;
