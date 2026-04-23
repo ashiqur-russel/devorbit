@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 
 export default function EmailTestPage() {
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [provider, setProvider] = useState<string>('none');
   const [to, setTo] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -15,6 +16,7 @@ export default function EmailTestPage() {
     try {
       const s = await api.mail.status();
       setConfigured(Boolean(s.configured));
+      setProvider(s.provider || 'none');
     } catch {
       setConfigured(false);
     }
@@ -30,7 +32,7 @@ export default function EmailTestPage() {
     setError(null);
     try {
       const r = await api.mail.sendTest(to.trim() || undefined);
-      setMessage(`Sent (Resend id: ${r.id}) → ${r.to}`);
+      setMessage(`Sent via ${r.via} (id: ${r.id}) → ${r.to}`);
       await loadStatus();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Request failed');
@@ -50,26 +52,33 @@ export default function EmailTestPage() {
         </Link>
         <h1 className="font-headline text-4xl font-black tracking-tighter text-on-surface">Email (test)</h1>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Uses{' '}
+          The API sends mail through <strong className="text-on-surface">Gmail (SMTP)</strong> if{' '}
+          <code className="text-xs text-primary">GMAIL_USER</code> and{' '}
+          <code className="text-xs text-primary">GMAIL_APP_PASSWORD</code> are set; otherwise through{' '}
           <a href="https://resend.com" className="text-secondary underline" target="_blank" rel="noopener noreferrer">
             Resend
           </a>{' '}
-          (free tier). Set <code className="text-xs text-primary">RESEND_API_KEY</code> on the API. Until you verify a
-          domain, keep <code className="text-xs text-primary">MAIL_FROM=Devorbit &lt;onboarding@resend.dev&gt;</code> and
-          send tests to the inbox tied to your Resend account (see Resend docs).
+          if <code className="text-xs text-primary">RESEND_API_KEY</code> is set. Use{' '}
+          <code className="text-xs text-primary">MAIL_PROVIDER=gmail</code> or <code className="text-xs">resend</code> to
+          force one when both are configured.
+        </p>
+        <p className="mt-2 text-xs text-outline">
+          Gmail: Google Account → Security → 2-Step Verification → App passwords. Use that 16-character password as{' '}
+          <code className="text-primary">GMAIL_APP_PASSWORD</code> (spaces optional).
         </p>
       </div>
 
       {configured === false && (
         <div className="rounded-xl border border-outline-variant/30 bg-surface-container-high px-4 py-3 text-sm text-on-surface-variant">
-          API reports <strong className="text-on-surface">RESEND_API_KEY</strong> is not set. Add it to your{' '}
-          <code className="text-xs">.env</code> and restart the API container.
+          API reports mail is not configured. Add <strong className="text-on-surface">GMAIL_USER</strong> +{' '}
+          <strong className="text-on-surface">GMAIL_APP_PASSWORD</strong> and/or <strong className="text-on-surface">RESEND_API_KEY</strong> to your{' '}
+          <code className="text-xs">.env</code>, then restart the API.
         </div>
       )}
 
       {configured === true && (
         <div className="rounded-xl border border-tertiary/30 bg-tertiary/5 px-4 py-3 text-sm text-tertiary">
-          Resend API key is loaded. You can send a test message.
+          Mail is configured (<span className="font-mono uppercase">{provider}</span>). You can send a test message.
         </div>
       )}
 

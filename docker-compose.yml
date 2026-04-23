@@ -42,8 +42,11 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL}
       WEB_URL: ${WEB_URL:-http://localhost:3000}
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-Devorbit <onboarding@resend.dev>}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-}
 
   web:
     build:

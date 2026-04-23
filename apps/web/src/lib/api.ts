@@ -20,9 +20,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   mail: {
-    status: () => request<{ provider: string; configured: boolean }>('/mail/status'),
+    status: () => request<{ provider: 'gmail' | 'resend' | 'none'; configured: boolean }>('/mail/status'),
     sendTest: (to?: string) =>
-      request<{ id: string; to: string }>('/mail/test', {
+      request<{ id: string; to: string; via: 'gmail' | 'resend' }>('/mail/test', {
         method: 'POST',
         body: JSON.stringify(to ? { to } : {}),
       }),

@@ -182,15 +182,25 @@ Connect third-party platforms under **Settings → Integrations**:
 
 ---
 
-## Transactional email (Resend, optional)
+## Transactional email (optional)
 
-For testing invites or notifications without running your own SMTP server, the API can send mail through **[Resend](https://resend.com)** (free tier).
+The API can send mail through **Gmail (SMTP)** or **[Resend](https://resend.com)**.
 
-1. Create a Resend account and an **API key**.
-2. Set **`RESEND_API_KEY`** (and optionally **`MAIL_FROM`**) in `.env` — see `.env.example`. Default sender is `Devorbit <onboarding@resend.dev>` until you verify a domain.
-3. Sign in to Devorbit, open **Settings → Email (test)**, or call **`GET /api/v1/mail/status`** and **`POST /api/v1/mail/test`** with your **JWT** (Swagger: `http://localhost:4000/api`). The test endpoint sends to your GitHub email unless you pass `{ "to": "you@example.com" }`.
+### Gmail (good for personal testing)
 
-Without a verified domain, Resend may only allow sending to addresses allowed on their free/test policy — check their dashboard if delivery fails.
+1. Use a **@gmail.com** account with **[2-Step Verification](https://myaccount.google.com/security)** turned on.
+2. Create an **[App password](https://myaccount.google.com/apppasswords)** (not your normal Gmail password).
+3. Set **`GMAIL_USER`** (full address) and **`GMAIL_APP_PASSWORD`** in `.env`, restart the API.
+4. Test from **Settings → Email** or **`POST /api/v1/mail/test`** with a JWT.
+
+`MAIL_FROM` defaults to `Devorbit <your@gmail.com>`. For Google Workspace, the same SMTP flow applies with that domain’s user + app password.
+
+### Resend (API, free tier)
+
+1. Create a Resend **API key**, set **`RESEND_API_KEY`** (and optionally **`MAIL_FROM`**). Default sender for Resend-only setups is `Devorbit <onboarding@resend.dev>` until you verify a domain.
+2. Same test UI / Swagger as above.
+
+If **both** Gmail and Resend variables are set, **Gmail is used first**; set **`MAIL_PROVIDER=resend`** to force Resend.
 
 ---
 

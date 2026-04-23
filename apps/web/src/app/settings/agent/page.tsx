@@ -35,7 +35,7 @@ export default function AgentSetupPage() {
         </p>
         <p className="mt-3 text-xs text-outline">
           <Link href="/settings/email" className="font-bold text-primary underline hover:text-secondary">
-            Test transactional email (Resend)
+            Test transactional email (Gmail or Resend)
           </Link>
         </p>
       </div>

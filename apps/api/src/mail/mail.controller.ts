@@ -13,17 +13,18 @@ export class MailController {
   constructor(private readonly mail: MailService) {}
 
   @Get('status')
-  @ApiOperation({ summary: 'Whether Resend (RESEND_API_KEY) is configured' })
+  @ApiOperation({ summary: 'Mail provider (Gmail SMTP or Resend) and whether it is configured' })
   status() {
+    const provider = this.mail.getProvider();
     return {
-      provider: 'resend',
+      provider: provider ?? 'none',
       configured: this.mail.isConfigured(),
     };
   }
 
   @Post('test')
   @ApiOperation({
-    summary: 'Send a test email (Resend). Defaults to the signed-in user’s email.',
+    summary: 'Send a test email via Gmail (SMTP) or Resend. Defaults to the signed-in user’s email.',
   })
   async sendTest(@Req() req: { user: User }, @Body() dto: SendTestEmailDto) {
     const user = req.user;
