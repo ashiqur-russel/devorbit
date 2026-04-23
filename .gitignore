@@ -30,3 +30,6 @@ Thumbs.db
 
 # test
 coverage
+
+# private docs (local runbooks, credentials, server notes)
+docs/private/
