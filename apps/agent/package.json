@@ -14,8 +14,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --noEmit",
+    "build": "node ./node_modules/typescript/bin/tsc -p .",
+    "dev": "node ./node_modules/typescript/bin/tsc -p . --watch --noEmit",
     "start": "node dist/cli.js",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build"
@@ -37,6 +37,6 @@
   "devDependencies": {
     "@types/node": "^22.13.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "5.8.3"
   }
 }
