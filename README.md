@@ -100,15 +100,16 @@ Some clouds only allow **22, 80, 443** from the internet. Your Amuvee runbooks o
 
 **Troubleshooting GitHub login (`Failed to obtain access token`, `EHOSTUNREACH` from inside the API container):** some VPS providers block outbound internet from Docker’s default bridge. The compose file runs the **API** with `network_mode: host` so OAuth can reach GitHub; Mongo/Redis stay on the bridge and are reached via `127.0.0.1` published ports.
 
-### Production deploy (GitHub Actions, semi-automated)
+### Production deploy (GitHub Actions — manual button)
 
-The **Deploy to VPS** workflow (`.github/workflows/deploy-vps.yml`) runs after **CI succeeds on a push to `main`**, but the deploy job is tied to the **`production`** GitHub Environment so you can require a human click before SSH runs.
+Deploy **does not** run automatically when CI passes. You start it from the Actions UI:
 
-1. In the repo: **Settings → Environments → New environment** → name **`production`**.
-2. Under **Deployment protection rules**, enable **Required reviewers** and add yourself (or a team).
-3. After each green **CI** run on `main`, open **Actions** → workflow **Deploy to VPS** → open the **newest run** (the run title shows **After CI · VPS deploy** or **Manual · VPS deploy**). The button is **not** on the repository home page. In the run’s **left sidebar**, click the job **`manual-vps-deploy`** (wait until it shows *Waiting for approval*). The first job **`manual-approval-hint`** only prints instructions. On the right, use **Review pending deployments** (or **Review deployments**) → select **`production`** → **Approve and deploy**.
+1. Wait until **CI** is green on **`main`** (same commit you want on the server).
+2. Open the repo → **Actions** tab.
+3. In the **left** list, click **Deploy to VPS** (under “All workflows”).
+4. On the **right**, click the blue **Run workflow** button → choose branch **`main`** → **Run workflow**.
 
-You can still start a deploy anytime from **Actions → Deploy to VPS → Run workflow** (`workflow_dispatch`). If the `production` environment has **no** protection rules, the **`deploy`** job runs immediately and you will **not** see an approve button (add **Required reviewers** on the environment to enable it).
+There is no separate “approve” screen unless you later add a GitHub Environment with **Required reviewers** and wire it back into the workflow.
 
 ---
 

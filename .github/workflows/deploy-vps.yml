@@ -1,25 +1,20 @@
-# Semi-automated CD (recommended):
-#   1) Push to main → CI runs.
-#   2) On successful CI (push to main), this workflow is queued; the deploy job
-#      waits on the GitHub Environment "production" until someone approves
-#      (Actions → pending deployment → Review deployments → Approve and deploy).
-#   3) Or run manually: Actions → "Deploy to VPS" → Run workflow.
+# Deploy to your VPS only when YOU click the button (no automatic deploy after CI).
 #
-# One-time setup: GitHub → Settings → Environments → Create "production" (if missing)
-#   → Required reviewers (add you / your team). Optional: restrict deployment branch to main.
+# Where is the button?
+#   1) Open the GitHub repo in a browser.
+#   2) Click the **Actions** tab (top menu, next to Pull requests).
+#   3) In the **left sidebar**, under "All workflows", click **Deploy to VPS**.
+#   4) On the right you will see a blue bar: **"Run workflow"** — click it, choose branch **main**, then **Run workflow**.
 #
-# If "production" has no protection rules, the job runs immediately (same as before).
+# Wait until the **CI** workflow on **main** is green, then run this workflow (same commit as main).
+#
+# Optional (advanced): to auto-queue deploy after CI and pause for an approve step inside GitHub,
+# add back a `workflow_run` trigger and set `environment: production` with **Required reviewers**
+# under Settings → Environments → production. Without reviewers, that environment does NOT show a button.
 name: Deploy to VPS
-run-name: >-
-  ${{ github.event_name == 'workflow_dispatch' &&
-      format('Manual · VPS deploy {0}', github.sha) ||
-      format('After CI · VPS deploy {0}', github.event.workflow_run.head_sha) }}
+run-name: Deploy VPS · ${{ github.sha }}
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: [main]
-    types: [completed]
   workflow_dispatch:
 
 concurrency:
@@ -27,47 +22,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Runs first (no environment gate). Name includes "manual" so it is easy to find in the sidebar.
-  manual-approval-hint:
-    runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'main')
-    steps:
-      - name: Where to approve (if deploy is waiting)
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "If the next job (manual-vps-deploy) waits for you, GitHub does NOT put the button on the repo home page."
-          echo ""
-          echo "1) Stay on THIS workflow run (Deploy to VPS)."
-          echo "2) In the LEFT sidebar, click the job named:  manual-vps-deploy   (not manual-approval-hint)."
-          echo "3) On the right, look for a yellow panel: 'Review pending deployments' or"
-          echo "   'Waiting for approval' → click  Review deployments  → check  production  → Approve and deploy."
-          echo ""
-          echo "This run URL (bookmark it while waiting):"
-          echo "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          echo ""
-          echo "If you never see Review deployments: Settings → Environments → production"
-          echo "→ ensure 'Required reviewers' is ON and your user is listed."
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
   manual-vps-deploy:
-    needs: [manual-approval-hint]
     runs-on: ubuntu-latest
-    environment: production
     timeout-minutes: 20
-    # Only after green CI on main from a real push (not pull_request), or manual dispatch.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'main')
-
     steps:
+      - name: You started a manual deploy
+        run: |
+          echo "This run was started with the **Run workflow** button (Actions → Deploy to VPS)."
+          echo "Commit: ${GITHUB_SHA}"
+          echo "Branch: ${GITHUB_REF_NAME}"
+
       - name: Deploy over SSH (git pull + rebuild + restart)
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -152,8 +116,8 @@ jobs:
                 --arg platform "OVH" \
                 --arg status "success" \
                 --arg environment "production" \
-                --arg branch "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}" \
-                --arg commitSha "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}" \
+                --arg branch "${{ github.ref_name }}" \
+                --arg commitSha "${{ github.sha }}" \
                 --arg externalId "gh-${{ github.run_id }}" \
                 '{projectId:$projectId,platform:$platform,status:$status,environment:$environment,branch:$branch,commitSha:$commitSha,externalId:$externalId,deployedAt:(now|todateiso8601)}' \
               )"
@@ -179,4 +143,3 @@ jobs:
 
             trap - ERR
             echo "Deploy finished successfully."
-
