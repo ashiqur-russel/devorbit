@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import type { ListAggregates, PaginationMeta } from '@devorbit/types';
 import { useTeamId } from '@/hooks/use-team-id';
 import { api } from '@/lib/api';
 
@@ -95,6 +96,8 @@ export default function GettingStartedPage() {
 
   const [integrations, setIntegrations] = useState<IntegrationRow[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [projectListMeta, setProjectListMeta] = useState<PaginationMeta | null>(null);
+  const [projectListAggregates, setProjectListAggregates] = useState<ListAggregates | null>(null);
   const [servers, setServers] = useState<ServerRow[]>([]);
   const [pipelines, setPipelines] = useState<PipelineRow[]>([]);
   const [deployments, setDeployments] = useState<DeploymentRow[]>([]);
@@ -103,6 +106,8 @@ export default function GettingStartedPage() {
     if (!teamId) {
       setIntegrations([]);
       setProjects([]);
+      setProjectListMeta(null);
+      setProjectListAggregates(null);
       setServers([]);
       setPipelines([]);
       setDeployments([]);
@@ -115,16 +120,18 @@ export default function GettingStartedPage() {
       try {
         setLoading(true);
         setError(null);
-        const [ints, projs, sv, pipes, deps] = await Promise.all([
+        const [ints, projsRes, sv, pipes, deps] = await Promise.all([
           api.integrations.list(teamId),
-          api.projects.byTeam(teamId),
+          api.projects.byTeam(teamId, { page: 1, limit: 1, summary: true }),
           api.servers.byTeam(teamId),
           api.pipelines.recentByTeam(teamId, { page: 1, limit: 20 }),
           api.deployments.recentByTeam(teamId, { page: 1, limit: 50 }),
         ]);
         if (cancelled) return;
         setIntegrations(Array.isArray(ints) ? (ints as IntegrationRow[]) : []);
-        setProjects(Array.isArray(projs) ? (projs as ProjectRow[]) : []);
+        setProjects(Array.isArray(projsRes.data) ? (projsRes.data as ProjectRow[]) : []);
+        setProjectListMeta(projsRes.meta);
+        setProjectListAggregates(projsRes.aggregates ?? null);
         setServers(Array.isArray(sv) ? (sv as ServerRow[]) : []);
         setPipelines(Array.isArray(pipes.data) ? (pipes.data as PipelineRow[]) : []);
         setDeployments(Array.isArray(deps.data) ? (deps.data as DeploymentRow[]) : []);
@@ -144,9 +151,9 @@ export default function GettingStartedPage() {
     const providers = new Set(integrations.map((x) => normProvider(x.provider)));
     const hasGitHub = providers.has('GITHUB');
     const hasVercel = providers.has('VERCEL');
-    const hasProject = projects.length > 0;
-    const projectWithRepo = projects.some((p) => Boolean(p.repoOwner && p.repoName));
-    const projectWithVercel = projects.some((p) => Boolean(p.vercelProjectId));
+    const hasProject = (projectListMeta?.total ?? 0) > 0;
+    const projectWithRepo = (projectListAggregates?.projectSummary?.withRepo ?? 0) > 0;
+    const projectWithVercel = (projectListAggregates?.projectSummary?.withVercel ?? 0) > 0;
     const hasServer = servers.length > 0;
 
     const hasAnyPipeline = pipelines.length > 0;
@@ -173,7 +180,7 @@ export default function GettingStartedPage() {
       hasAnyDeployment,
       hasAnyVpsDeployment,
     };
-  }, [integrations, projects, servers, pipelines, deployments]);
+  }, [integrations, servers, pipelines, deployments, projectListMeta, projectListAggregates]);
 
   const completion = useMemo(() => {
     const items = [

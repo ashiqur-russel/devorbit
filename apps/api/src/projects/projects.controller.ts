@@ -4,6 +4,8 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 import { ProjectsService } from './projects.service';
 import { TeamsService } from '../teams/teams.service';
+import { TeamProjectsQueryDto } from '../common/dto/team-projects-query.dto';
+import { normalizeTeamProjectsQuery } from '../common/dto/team-projects-query.util';
 
 @ApiTags('projects')
 @ApiBearerAuth()
@@ -16,9 +18,14 @@ export class ProjectsController {
   ) {}
 
   @Get('team/:teamId')
-  async findByTeam(@Param('teamId') teamId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
+  async findByTeam(
+    @Param('teamId') teamId: string,
+    @Req() req: { user: { _id: Types.ObjectId } },
+    @Query() query: TeamProjectsQueryDto,
+  ) {
     await this.teamsService.assertCanAccessTeam(req.user._id.toString(), teamId);
-    return this.projectsService.findByTeam(teamId);
+    const q = normalizeTeamProjectsQuery(query);
+    return this.projectsService.findByTeamPaginated(teamId, q.page, q.limit, { summary: q.summary });
   }
 
   @Post()

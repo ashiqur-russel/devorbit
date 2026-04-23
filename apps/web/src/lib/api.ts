@@ -191,7 +191,13 @@ export const api = {
       request(`/integrations/${teamId}/${provider}`, { method: 'DELETE' }),
   },
   projects: {
-    byTeam: (teamId: string) => request<any[]>(`/projects/team/${teamId}`),
+    byTeam: (teamId: string, opts?: { page?: number; limit?: number; summary?: boolean }) => {
+      const sp = new URLSearchParams();
+      sp.set('page', String(opts?.page ?? 1));
+      sp.set('limit', String(opts?.limit ?? 20));
+      if (opts?.summary) sp.set('summary', '1');
+      return request<PaginatedResponse<unknown>>(`/projects/team/${teamId}?${sp.toString()}`);
+    },
     create: (data: {
       teamId: string;
       name: string;

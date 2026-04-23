@@ -1,11 +1,18 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { buildPaginationMeta, paginationSkip, type ListAggregates, type PaginationMeta } from '@devorbit/types';
 import { Project } from './project.schema';
 import { PipelineRun } from '../pipelines/pipeline.schema';
 import { Deployment } from '../deployments/deployment.schema';
 import { TeamsService } from '../teams/teams.service';
 import crypto from 'crypto';
+
+export type TeamProjectsListPayload = {
+  data: Project[];
+  meta: PaginationMeta;
+  aggregates?: ListAggregates;
+};
 
 @Injectable()
 export class ProjectsService {
@@ -22,6 +29,43 @@ export class ProjectsService {
 
   async findByTeam(teamId: string): Promise<Project[]> {
     return this.projectModel.find({ teamId: new Types.ObjectId(teamId), deletedAt: { $exists: false } });
+  }
+
+  /** Paginated active projects for a team (HTTP). Internal callers should keep using {@link findByTeam}. */
+  async findByTeamPaginated(
+    teamId: string,
+    page: number,
+    limit: number,
+    opts?: { summary?: boolean },
+  ): Promise<TeamProjectsListPayload> {
+    const filter = { teamId: new Types.ObjectId(teamId), deletedAt: { $exists: false } };
+    const total = await this.projectModel.countDocuments(filter).exec();
+    const meta = buildPaginationMeta(page, limit, total, { maxPageSize: 200 });
+    const skip = paginationSkip(meta);
+    const data = await this.projectModel
+      .find(filter)
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(meta.pageSize)
+      .exec();
+
+    let aggregates: ListAggregates | undefined;
+    if (opts?.summary) {
+      const [withRepo, withVercel] = await Promise.all([
+        this.projectModel.countDocuments({
+          ...filter,
+          repoOwner: { $exists: true, $ne: '' },
+          repoName: { $exists: true, $ne: '' },
+        }),
+        this.projectModel.countDocuments({
+          ...filter,
+          vercelProjectId: { $exists: true, $ne: '' },
+        }),
+      ]);
+      aggregates = { projectSummary: { withRepo, withVercel } };
+    }
+
+    return { data, meta, aggregates };
   }
 
   async findAllWithRepo(provider: 'GITHUB' | 'GITLAB'): Promise<Project[]> {

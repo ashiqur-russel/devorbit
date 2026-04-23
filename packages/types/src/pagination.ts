@@ -12,9 +12,17 @@ export interface PaginationMeta {
   hasPreviousPage: boolean;
 }
 
+/** Team-scoped project list: counts across the full filter (not only the current page). */
+export interface ProjectTeamSummaryAggregates {
+  withRepo: number;
+  withVercel: number;
+}
+
 export interface ListAggregates {
   /** Counts keyed by status (or other discriminator) for the same filter as `data` / `meta.total`. */
   statusCounts?: Record<string, number>;
+  /** Present when the API supports team project summary counts (e.g. `summary=1`). */
+  projectSummary?: ProjectTeamSummaryAggregates;
 }
 
 export interface PaginatedResponse<T> {
@@ -23,9 +31,20 @@ export interface PaginatedResponse<T> {
   aggregates?: ListAggregates;
 }
 
+export type BuildPaginationMetaOptions = {
+  /** Upper bound for page size (default 100). Team projects may use 200. */
+  maxPageSize?: number;
+};
+
 /** Normalize paging inputs and compute meta aligned with skip/limit queries. */
-export function buildPaginationMeta(page: number, pageSize: number, total: number): PaginationMeta {
-  const safePageSize = Math.max(1, Math.min(Math.floor(Number(pageSize)) || 20, 100));
+export function buildPaginationMeta(
+  page: number,
+  pageSize: number,
+  total: number,
+  opts?: BuildPaginationMetaOptions,
+): PaginationMeta {
+  const cap = opts?.maxPageSize ?? 100;
+  const safePageSize = Math.max(1, Math.min(Math.floor(Number(pageSize)) || 20, cap));
   const totalPages = total === 0 ? 0 : Math.ceil(total / safePageSize);
   const requested = Math.floor(Number(page)) || 1;
   const safePage = totalPages === 0 ? 1 : Math.min(Math.max(1, requested), totalPages);

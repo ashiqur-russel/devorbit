@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { ListAggregates, PaginationMeta } from '@devorbit/types';
 import { api } from '@/lib/api';
 import { useTeamId } from '@/hooks/use-team-id';
 import { Modal } from '@/components/ui/Modal';
@@ -45,10 +46,19 @@ export default function ProjectsPage() {
     vercelProjectId: string;
   } | null>(null);
   const [page, setPage] = useState(1);
+  const [listMeta, setListMeta] = useState<PaginationMeta | null>(null);
+  const [listAggregates, setListAggregates] = useState<ListAggregates | null>(null);
+  const [listTick, setListTick] = useState(0);
+
+  useEffect(() => {
+    setPage(1);
+  }, [teamId]);
 
   useEffect(() => {
     if (!teamId) {
       setProjects([]);
+      setListMeta(null);
+      setListAggregates(null);
       setLoading(false);
       return;
     }
@@ -57,8 +67,12 @@ export default function ProjectsPage() {
       setLoading(true);
       setError(null);
       try {
-        const rows = await api.projects.byTeam(teamId);
-        if (!cancelled) setProjects(Array.isArray(rows) ? (rows as ProjectRow[]) : []);
+        const res = await api.projects.byTeam(teamId, { page, limit: PAGE_SIZE, summary: true });
+        if (cancelled) return;
+        setProjects(Array.isArray(res.data) ? (res.data as ProjectRow[]) : []);
+        setListMeta(res.meta);
+        setListAggregates(res.aggregates ?? null);
+        if (res.meta.page !== page) setPage(res.meta.page);
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load projects');
       } finally {
@@ -68,11 +82,7 @@ export default function ProjectsPage() {
     return () => {
       cancelled = true;
     };
-  }, [teamId]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [teamId]);
+  }, [teamId, page, listTick]);
 
   const openDetails = (p: ProjectRow) => {
     setError(null);
@@ -110,6 +120,7 @@ export default function ProjectsPage() {
       });
       setProjects((prev) => prev.map((x) => (x._id === active._id ? { ...x, ...updated } : x)));
       setActive((p) => (p && p._id === active._id ? { ...p, ...updated } : p));
+      setListTick((t) => t + 1);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to update project');
     } finally {
@@ -125,6 +136,7 @@ export default function ProjectsPage() {
     try {
       await api.projects.remove(active._id, false);
       setProjects((prev) => prev.filter((x) => x._id !== active._id));
+      setListTick((t) => t + 1);
       closeDetails();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to archive project');
@@ -147,6 +159,7 @@ export default function ProjectsPage() {
     try {
       await api.projects.remove(active._id, true);
       setProjects((prev) => prev.filter((x) => x._id !== active._id));
+      setListTick((t) => t + 1);
       closeDetails();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to delete project');
@@ -169,20 +182,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const linkedCount = useMemo(() => projects.filter((p) => p.repoOwner && p.repoName).length, [projects]);
-
-  const { paginatedProjects, listPage } = useMemo(() => {
-    const totalPages = Math.max(1, Math.ceil(projects.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
-    const start = (safePage - 1) * PAGE_SIZE;
-    return { paginatedProjects: projects.slice(start, start + PAGE_SIZE), listPage: safePage };
-  }, [projects, page]);
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(projects.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
-    if (safePage !== page) setPage(safePage);
-  }, [projects.length, page]);
+  const linkedCount = listAggregates?.projectSummary?.withRepo ?? 0;
 
   return (
     <div className="space-y-10">
@@ -232,7 +232,7 @@ export default function ProjectsPage() {
       {teamId && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {[
-            { label: 'Total', value: projects.length, accent: 'text-on-surface' },
+            { label: 'Total', value: listMeta?.total ?? 0, accent: 'text-on-surface' },
             { label: 'Repos linked', value: linkedCount, accent: 'text-secondary' },
             { label: 'Team scope', value: teamId, accent: 'text-outline', mono: true },
           ].map((c) => (
@@ -258,13 +258,13 @@ export default function ProjectsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 px-6 py-4">
           <span className="text-xs font-bold uppercase tracking-widest font-headline text-on-surface">Your projects</span>
           <span className="rounded-lg bg-surface-container-highest px-2 py-1 font-mono text-xs text-outline">
-            {loading ? '…' : `${projects.length} total`}
+            {loading ? '…' : `${listMeta?.total ?? 0} total`}
           </span>
         </div>
 
         {loading ? (
           <div className="px-6 py-16 text-center text-sm text-outline">Loading…</div>
-        ) : !teamId ? null : projects.length === 0 ? (
+        ) : !teamId ? null : projects.length === 0 && (listMeta?.total ?? 0) === 0 ? (
           <div className="px-6 py-16 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-high text-2xl">
               ◎
@@ -303,7 +303,7 @@ export default function ProjectsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {paginatedProjects.map((p) => (
+                {projects.map((p) => (
                   <tr key={p._id} className="transition-colors hover:bg-white/[0.04]">
                     <td className="px-6 py-4 text-sm font-medium text-on-surface">{p.name || 'Project'}</td>
                     <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{repoLabel(p)}</td>
@@ -334,7 +334,7 @@ export default function ProjectsPage() {
               </tbody>
             </table>
           </div>
-          <ListPagination page={listPage} pageSize={PAGE_SIZE} total={projects.length} onPageChange={setPage} />
+          <ListPagination page={page} pageSize={PAGE_SIZE} total={listMeta?.total ?? 0} onPageChange={setPage} />
           </>
         )}
       </div>

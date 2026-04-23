@@ -117,9 +117,10 @@ export default function PipelinesPage() {
     let cancelled = false;
     (async () => {
       try {
-        const projRows = await api.projects.byTeam(teamId);
+        const projRes = await api.projects.byTeam(teamId, { page: 1, limit: 200 });
         if (!cancelled) {
-          setProjects(Array.isArray(projRows) ? projRows.map((p: { _id?: string; name?: string }) => ({ _id: String(p._id), name: p.name })) : []);
+          const projRows = Array.isArray(projRes.data) ? projRes.data : [];
+          setProjects(projRows.map((p: { _id?: string; name?: string }) => ({ _id: String(p._id), name: p.name })));
         }
       } catch {
         if (!cancelled) setProjects([]);
