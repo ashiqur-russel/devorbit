@@ -115,6 +115,43 @@ export default function AgentSetupPage() {
           </div>
         </div>
       </div>
+
+      <div className="max-w-3xl space-y-3 rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
+        <h2 className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface">
+          Remove agent from this server
+        </h2>
+        <p className="text-sm text-on-surface-variant">
+          The install command does not register a system package or systemd unit by default—it starts a Node process. To
+          uninstall, stop that process and optionally revoke access in Devorbit.
+        </p>
+        <ol className="list-decimal space-y-2 pl-5 text-sm text-on-surface-variant">
+          <li>
+            <strong className="text-on-surface">Stop the agent.</strong> If you used{' '}
+            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">--background</code>, the command
+            printed a line like <code className="font-mono text-xs text-secondary">Stop with: kill &lt;pid&gt;</code>.
+            Run that, or find the PID with{' '}
+            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">pgrep -af devorbit-agent</code>{' '}
+            / <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">ps aux | grep devorbit</code>{' '}
+            and <code className="font-mono text-xs">kill &lt;pid&gt;</code>.
+          </li>
+          <li>
+            <strong className="text-on-surface">If you wrapped it in systemd, cron, or Docker,</strong> remove that unit,
+            job, or container instead of only killing one-off processes.
+          </li>
+          <li>
+            <strong className="text-on-surface">Treat the token as host-specific.</strong> After you stop the process,
+            metrics stop. For a replacement machine, register a new server in Devorbit and use its new{' '}
+            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">dev_…</code> token—do not reuse
+            the old token elsewhere so a stray copy of the agent cannot reconnect.
+          </li>
+          <li>
+            <strong className="text-on-surface">Optional:</strong> clear the npx download cache if you want the package
+            gone from disk (
+            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">~/.npm/_npx</code> on many
+            systems)—not required for the agent to stay off.
+          </li>
+        </ol>
+      </div>
     </div>
   );
 }
