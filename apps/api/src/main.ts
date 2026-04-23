@@ -21,7 +21,9 @@ async function bootstrap() {
     .build();
   SwaggerModule.setup('api', app, SwaggerModule.createDocument(app, config));
 
-  await app.listen(process.env.PORT || 4000);
+  const port = Number(process.env.PORT) || 4000;
+  // Bind IPv4 explicitly so probes to 127.0.0.1 work reliably (host / Docker host networking).
+  await app.listen(port, '0.0.0.0');
 }
 
 bootstrap();
