@@ -112,7 +112,9 @@ export const api = {
         registerUrl: string;
         email: string;
         expiresAt: string;
+        mailConfigured: boolean;
         mailSent: boolean;
+        mailError?: string;
       }>(`/organizations/${orgId}/invites`, { method: 'POST', body: JSON.stringify(body) }),
     addTeamMember: (orgId: string, teamId: string, email: string) =>
       request<{ ok: boolean }>(`/organizations/${orgId}/teams/${teamId}/members`, {

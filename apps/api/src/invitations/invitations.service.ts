@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,6 +19,8 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class InvitationsService {
+  private readonly logger = new Logger(InvitationsService.name);
+
   constructor(
     @InjectModel(Invitation.name) private invitationModel: Model<Invitation>,
     @InjectModel(Organization.name) private orgModel: Model<Organization>,
@@ -87,7 +90,11 @@ export class InvitationsService {
     const webUrl = (this.config.get<string>('WEB_URL') || 'http://localhost:3000').replace(/\/$/, '');
     const registerUrl = `${webUrl}/register?invite=${token}`;
 
-    if (this.mailService.isConfigured()) {
+    const mailConfigured = this.mailService.isConfigured();
+    let mailSent = false;
+    let mailError: string | undefined;
+
+    if (mailConfigured) {
       try {
         await this.mailService.send({
           to: normalized,
@@ -95,8 +102,11 @@ export class InvitationsService {
           html: `<p>You were invited to join <strong>${org.name}</strong> on Devorbit.</p>
             <p><a href="${registerUrl}">Create your account and join</a> (link expires in 7 days).</p>`,
         });
-      } catch {
-        /* still return link if mail fails */
+        mailSent = true;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        this.logger.warn(`Invite email failed for ${normalized}: ${msg}`);
+        mailError = msg;
       }
     }
 
@@ -105,7 +115,9 @@ export class InvitationsService {
       registerUrl,
       email: normalized,
       expiresAt: inv.expiresAt,
-      mailSent: this.mailService.isConfigured(),
+      mailConfigured,
+      mailSent,
+      mailError,
     };
   }
 

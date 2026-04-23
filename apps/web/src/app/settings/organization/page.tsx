@@ -79,11 +79,21 @@ export default function OrganizationSettingsPage() {
         email: inviteEmail.trim(),
         teamId: teamId || undefined,
       });
-      setInviteMsg(
-        res.mailSent
-          ? `Invite email sent to ${res.email}. They can also open: ${res.registerUrl}`
-          : `Mail is not configured. Share this link with ${res.email}: ${res.registerUrl}`,
-      );
+      if (res.mailSent) {
+        setInviteMsg(
+          `Invite email sent to ${res.email}. They can also open: ${res.registerUrl}`,
+        );
+      } else if (res.mailConfigured && res.mailError) {
+        setInviteMsg(
+          `Email was not delivered (${res.mailError}). Share this link manually with ${res.email}: ${res.registerUrl}`,
+        );
+      } else if (!res.mailConfigured) {
+        setInviteMsg(
+          `Mail is not configured on the API. Share this link with ${res.email}: ${res.registerUrl}`,
+        );
+      } else {
+        setInviteMsg(`Share this link with ${res.email}: ${res.registerUrl}`);
+      }
       setInviteEmail('');
     } catch (e: unknown) {
       setInviteErr(e instanceof Error ? e.message : 'Failed to create invite');
