@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { getAgentInstallCommand } from '@/lib/agent-install-command';
 import { useAgentInstallBootstrap } from '@/hooks/use-agent-install-bootstrap';
+import AgentStopCommands from '@/components/agent/AgentStopCommands';
 
 export default function AgentSetupPage() {
   const [copied, setCopied] = useState(false);
@@ -73,7 +74,10 @@ export default function AgentSetupPage() {
         {[
           { n: '01', text: 'Ensure Node.js 18+ and npm are installed on the target server (npx comes with npm).' },
           { n: '02', text: 'The command uses your server agent token (dev_…), not your login JWT.' },
-          { n: '03', text: 'The command uses --background so SSH returns immediately; stop with the kill PID line printed by the agent.' },
+          {
+            n: '03',
+            text: 'The command uses --background so SSH returns immediately. Save the printed Stop with: kill <pid> line, or scroll to “Stop or remove the agent” on this page for copy-paste commands.',
+          },
         ].map((step) => (
           <div key={step.n} className="flex items-start gap-4">
             <span className="text-xs font-mono text-secondary font-bold shrink-0">{step.n}</span>
@@ -116,23 +120,23 @@ export default function AgentSetupPage() {
         </div>
       </div>
 
-      <div className="max-w-3xl space-y-3 rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
+      <div className="max-w-3xl space-y-4 rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
         <h2 className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface">
-          Remove agent from this server
+          Stop or remove the agent on a server
         </h2>
         <p className="text-sm text-on-surface-variant">
           The install command does not register a system package or systemd unit by default—it starts a Node process. To
-          uninstall, stop that process and optionally revoke access in Devorbit.
+          uninstall, stop that process. Full write-up also lives in the repo README and <code className="text-xs">docs/agent-guide.html</code>.
         </p>
+
+        <AgentStopCommands />
+
         <ol className="list-decimal space-y-2 pl-5 text-sm text-on-surface-variant">
           <li>
-            <strong className="text-on-surface">Stop the agent.</strong> If you used{' '}
-            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">--background</code>, the command
-            printed a line like <code className="font-mono text-xs text-secondary">Stop with: kill &lt;pid&gt;</code>.
-            Run that, or find the PID with{' '}
-            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">pgrep -af devorbit-agent</code>{' '}
-            / <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">ps aux | grep devorbit</code>{' '}
-            and <code className="font-mono text-xs">kill &lt;pid&gt;</code>.
+            <strong className="text-on-surface">Stop the agent.</strong> Use the commands above, or the{' '}
+            <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">Stop with: kill &lt;pid&gt;</code>{' '}
+            line from when you started with <code className="rounded bg-surface-container-highest px-1 font-mono text-xs">--background</code>.
+            You can also try <code className="font-mono text-xs">ps aux | grep devorbit</code> (ignore the grep line).
           </li>
           <li>
             <strong className="text-on-surface">If you wrapped it in systemd, cron, or Docker,</strong> remove that unit,

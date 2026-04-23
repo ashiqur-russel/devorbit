@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { getAgentInstallCommand } from '@/lib/agent-install-command';
 import { useAgentInstallBootstrap } from '@/hooks/use-agent-install-bootstrap';
+import AgentStopCommands from '@/components/agent/AgentStopCommands';
 
 export default function OnboardingStep3() {
   const [copied, setCopied] = useState(false);
@@ -38,8 +39,9 @@ export default function OnboardingStep3() {
           </h1>
           <p className="text-on-surface-variant max-w-md mx-auto text-lg leading-relaxed">
             Run this command on any server you want to monitor. It includes <code className="text-tertiary">--background</code> so
-            your shell returns right away — <strong className="text-on-surface">npx does not reinstall</strong> each time; to stop
-            the agent, use the <code className="text-tertiary">kill</code> command printed in the output.
+            your shell returns right away — <strong className="text-on-surface">npx does not reinstall</strong> each time. To stop
+            the agent later, use the printed <code className="text-tertiary">kill</code> line or the commands below (also on{' '}
+            <strong className="text-on-surface">Settings → Agent</strong>).
           </p>
         </div>
 
@@ -91,6 +93,17 @@ export default function OnboardingStep3() {
               Copy failed (common on locked-down browsers). Select the command above and copy manually, or use HTTPS.
             </p>
           )}
+        </div>
+
+        <div className="mt-8 w-full max-w-2xl text-left">
+          <h3 className="mb-2 font-headline text-[10px] font-bold uppercase tracking-widest text-outline">
+            Stopping the agent later
+          </h3>
+          <AgentStopCommands />
+          <p className="mt-2 text-center text-[11px] text-outline">
+            Same instructions anytime under{' '}
+            <strong className="text-on-surface-variant">Settings → Agent</strong>.
+          </p>
         </div>
 
         {/* Connection status — was static; now reflects API poll */}
