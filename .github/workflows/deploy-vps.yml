@@ -40,6 +40,13 @@ jobs:
  
             # Report deployment from inside the VPS (avoids Nginx/public networking issues).
             if [ -n "${{ secrets.DEVORBIT_PROJECT_ID }}" ] && [ -n "${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" ]; then
+              echo "Waiting for API to accept connections on 127.0.0.1:4000…"
+              for i in $(seq 1 30); do
+                if curl -sS -o /dev/null "http://127.0.0.1:4000/api/v1/deployments/report" -X POST -H "Content-Type: application/json" --data '{}' 2>/dev/null; then
+                  break
+                fi
+                sleep 1
+              done
               echo "Reporting deployment to local API (127.0.0.1:4000)…"
               http_code="$(curl -sS -o /tmp/devorbit-report.json -w "%{http_code}" -X POST "http://127.0.0.1:4000/api/v1/deployments/report" \
                 -H "Content-Type: application/json" \
