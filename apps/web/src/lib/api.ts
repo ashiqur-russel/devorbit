@@ -180,6 +180,7 @@ export const api = {
       repoName?: string;
       vercelProjectId?: string;
     }) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
-    remove: (projectId: string) => request<{ ok: true }>(`/projects/${projectId}`, { method: 'DELETE' }),
+    remove: (projectId: string, cascade?: boolean) =>
+      request<{ ok: true }>(`/projects/${projectId}${cascade ? '?cascade=1' : ''}`, { method: 'DELETE' }),
   },
 };

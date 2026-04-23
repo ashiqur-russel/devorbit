@@ -54,11 +54,23 @@ export default function ProjectsPage() {
   }, [teamId]);
 
   const deleteProject = async (p: ProjectRow) => {
-    if (!confirm(`Delete project "${p.name || p._id}"? This will only remove the project record.`)) return;
+    const choice = prompt(
+      `Delete project "${p.name || p._id}"?\n\n` +
+        `Type:\n` +
+        `- ARCHIVE (recommended) to hide it (keeps pipelines/deployments)\n` +
+        `- DELETE to permanently delete it and ALL related pipelines/deployments\n\n` +
+        `Anything else cancels.`,
+    )
+      ?.trim()
+      .toUpperCase();
+    if (!choice) return;
+
+    const cascade = choice === 'DELETE';
+    if (choice !== 'ARCHIVE' && choice !== 'DELETE') return;
     setDeletingId(p._id);
     setError(null);
     try {
-      await api.projects.remove(p._id);
+      await api.projects.remove(p._id, cascade);
       setProjects((prev) => prev.filter((x) => x._id !== p._id));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to delete project');

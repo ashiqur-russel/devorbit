@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Types } from 'mongoose';
@@ -36,7 +36,8 @@ export class ProjectsController {
   }
 
   @Delete(':projectId')
-  remove(@Param('projectId') projectId: string) {
-    return this.projectsService.remove(projectId);
+  remove(@Param('projectId') projectId: string, @Query('cascade') cascade?: string) {
+    const doCascade = cascade === '1' || cascade === 'true';
+    return this.projectsService.remove(projectId, { cascade: doCascade });
   }
 }

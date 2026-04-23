@@ -23,6 +23,10 @@ export class Project extends Document {
 
   @Prop()
   vercelProjectId: string;
+
+  /** Soft-delete flag. Archived projects are excluded from sync + lists by default. */
+  @Prop()
+  deletedAt?: Date;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
