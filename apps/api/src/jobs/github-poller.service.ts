@@ -43,12 +43,17 @@ export class GithubPollerService implements OnModuleInit, OnModuleDestroy {
       const url = `https://api.github.com/repos/${project.repoOwner}/${project.repoName}/actions/runs?per_page=20`;
       const res = await fetch(url, {
         headers: {
+          Accept: 'application/vnd.github+json',
           Authorization: `Bearer ${token}`,
           'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'devorbit-poller',
         },
       });
       if (!res.ok) {
-        this.logger.warn(`GitHub API ${res.status} for ${project.repoOwner}/${project.repoName}`);
+        const body = await res.text().catch(() => '');
+        this.logger.warn(
+          `GitHub API ${res.status} for ${project.repoOwner}/${project.repoName}${body ? ` — ${body.slice(0, 240)}` : ''}`,
+        );
         return;
       }
       const data = (await res.json()) as { workflow_runs: any[] };

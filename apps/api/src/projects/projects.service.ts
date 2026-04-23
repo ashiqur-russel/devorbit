@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Project } from './project.schema';
@@ -25,5 +25,11 @@ export class ProjectsService {
 
   async findAllWithVercel(): Promise<Project[]> {
     return this.projectModel.find({ vercelProjectId: { $exists: true, $ne: '' } });
+  }
+
+  async remove(projectId: string): Promise<{ ok: true }> {
+    const res = await this.projectModel.deleteOne({ _id: new Types.ObjectId(projectId) });
+    if (!res.deletedCount) throw new NotFoundException('Project not found');
+    return { ok: true };
   }
 }

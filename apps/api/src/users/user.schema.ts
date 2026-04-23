@@ -29,7 +29,10 @@ UserSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      githubId: { $exists: true, $type: 'string', $ne: '' },
+      // Keep this partial index compatible with older MongoDB versions:
+      // - We already coerce null/empty-string -> undefined in pre('validate') below
+      // - So indexing only when githubId is a string is sufficient
+      githubId: { $type: 'string' },
     },
   },
 );

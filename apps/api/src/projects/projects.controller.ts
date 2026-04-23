@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Types } from 'mongoose';
@@ -33,5 +33,10 @@ export class ProjectsController {
       ...body,
       teamId: new Types.ObjectId(body.teamId),
     });
+  }
+
+  @Delete(':projectId')
+  remove(@Param('projectId') projectId: string) {
+    return this.projectsService.remove(projectId);
   }
 }

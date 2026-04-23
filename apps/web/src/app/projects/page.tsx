@@ -27,6 +27,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!teamId) {
@@ -51,6 +52,20 @@ export default function ProjectsPage() {
       cancelled = true;
     };
   }, [teamId]);
+
+  const deleteProject = async (p: ProjectRow) => {
+    if (!confirm(`Delete project "${p.name || p._id}"? This will only remove the project record.`)) return;
+    setDeletingId(p._id);
+    setError(null);
+    try {
+      await api.projects.remove(p._id);
+      setProjects((prev) => prev.filter((x) => x._id !== p._id));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to delete project');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const linkedCount = useMemo(() => projects.filter((p) => p.repoOwner && p.repoName).length, [projects]);
 
@@ -168,6 +183,7 @@ export default function ProjectsPage() {
                   <th className="px-6 py-3">Repo</th>
                   <th className="px-6 py-3">Provider</th>
                   <th className="px-6 py-3">Vercel</th>
+                  <th className="px-6 py-3 text-right"> </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
@@ -177,6 +193,16 @@ export default function ProjectsPage() {
                     <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{repoLabel(p)}</td>
                     <td className="px-6 py-4 text-xs font-bold text-primary">{(p.repoProvider || '—').toUpperCase()}</td>
                     <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{p.vercelProjectId || '—'}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => deleteProject(p)}
+                        disabled={deletingId === p._id}
+                        className="text-xs font-bold uppercase tracking-wider text-error hover:underline disabled:opacity-50"
+                      >
+                        {deletingId === p._id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
