@@ -54,23 +54,29 @@ jobs:
                 sleep 1
               done
               echo "Reporting deployment to local API (127.0.0.1:4000)…"
-              http_code="$(curl -sS -o /tmp/devorbit-report.json -w "%{http_code}" -X POST "http://127.0.0.1:4000/api/v1/deployments/report" \
+              echo "Report payload:"
+              payload="$(jq -nc \
+                --arg projectId "$project_id" \
+                --arg platform "OVH" \
+                --arg status "success" \
+                --arg environment "production" \
+                --arg branch "${{ github.event.workflow_run.head_branch || github.ref_name }}" \
+                --arg commitSha "${{ github.event.workflow_run.head_sha || github.sha }}" \
+                --arg externalId "gh-${{ github.run_id }}" \
+                '{projectId:$projectId,platform:$platform,status:$status,environment:$environment,branch:$branch,commitSha:$commitSha,externalId:$externalId,deployedAt:(now|todateiso8601)}' \
+              )"
+              echo "$payload"
+
+              http_code="$(curl -sS -D /tmp/devorbit-report.headers -o /tmp/devorbit-report.body -w "%{http_code}" -X POST "http://127.0.0.1:4000/api/v1/deployments/report" \
                 -H "Content-Type: application/json" \
                 -H "x-devorbit-deploy-token: ${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" \
-                --data-binary "$(jq -nc \
-                  --arg projectId "$project_id" \
-                  --arg platform "OVH" \
-                  --arg status "success" \
-                  --arg environment "production" \
-                  --arg branch "${{ github.event.workflow_run.head_branch || github.ref_name }}" \
-                  --arg commitSha "${{ github.event.workflow_run.head_sha || github.sha }}" \
-                  --arg externalId "gh-${{ github.run_id }}" \
-                  '{projectId:$projectId,platform:$platform,status:$status,environment:$environment,branch:$branch,commitSha:$commitSha,externalId:$externalId,deployedAt:(now|todateiso8601)}' \
-                )" \
+                --data-binary "$payload" \
               )"
               echo "Devorbit report status: ${http_code}"
-              echo "Devorbit report body:"
-              cat /tmp/devorbit-report.json || true
+              echo "Devorbit report response headers:"
+              cat /tmp/devorbit-report.headers || true
+              echo "Devorbit report response body:"
+              cat /tmp/devorbit-report.body || true
               if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
                 echo "Devorbit deployment report failed"
                 exit 1
