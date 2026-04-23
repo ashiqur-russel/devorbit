@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Devorbit — User Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #0b1326;
+      --surface: #131b2e;
+      --surface-hi: #222a3d;
+      --border: #2d3449;
+      --primary: #d0bcff;
+      --secondary: #4cd7f6;
+      --tertiary: #4edea3;
+      --error: #ffb4ab;
+      --text: #dae2fd;
+      --muted: #cbc3d7;
+      --outline: #494454;
+      --code: #0f1830;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at 20% 15%, rgba(208,188,255,0.12), transparent 45%),
+                  radial-gradient(circle at 80% 70%, rgba(76,215,246,0.10), transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      padding: 40px;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .wrap { max-width: 980px; margin: 0 auto; }
+
+    .cover {
+      border: 1px solid rgba(73, 68, 84, 0.6);
+      background: rgba(19, 27, 46, 0.72);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .cover:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 2px 2px, rgba(76,215,246,0.06) 1px, transparent 0);
+      background-size: 28px 28px;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+    .cover > * { position: relative; }
+
+    .badge {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(76, 215, 246, 0.28);
+      background: rgba(34, 42, 61, 0.55);
+      color: var(--secondary);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+    h1 {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-size: 40px;
+      letter-spacing: -0.03em;
+      margin-top: 14px;
+      font-weight: 900;
+    }
+    .subtitle { margin-top: 10px; color: rgba(203,195,215,0.95); max-width: 74ch; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid rgba(45, 52, 73, 0.9);
+      background: rgba(19, 27, 46, 0.72);
+      border-radius: 16px;
+      padding: 22px;
+    }
+
+    h2 {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+    p { color: rgba(218,226,253,0.92); }
+
+    ul { margin-top: 10px; padding-left: 18px; color: rgba(218,226,253,0.92); }
+    li { margin: 6px 0; }
+    .muted { color: rgba(203,195,215,0.92); }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(73, 68, 84, 0.55);
+      background: rgba(34, 42, 61, 0.35);
+      font-size: 12px;
+      color: rgba(218,226,253,0.9);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .callout {
+      margin-top: 12px;
+      border: 1px solid rgba(76, 215, 246, 0.18);
+      background: rgba(34, 42, 61, 0.35);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    code, pre {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+    pre {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(45, 52, 73, 0.9);
+      background: var(--code);
+      overflow: auto;
+      color: rgba(218,226,253,0.95);
+    }
+    a { color: var(--secondary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="cover">
+      <span class="badge">DEVORBIT • USER GUIDE</span>
+      <h1>How Devorbit Works</h1>
+      <p class="subtitle">
+        A practical guide to the Devorbit user journey: teams & projects, pipelines, deployments (Vercel + VPS),
+        server monitoring, and how to troubleshoot issues when data isn’t showing.
+      </p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1) Big picture</h2>
+        <ul>
+          <li><b>Pipelines</b> come from <span class="pill">GitHub Actions</span>/<span class="pill">GitLab CI</span> via API polling.</li>
+          <li><b>Deployments</b> come from platform integrations (ex: <span class="pill">Vercel</span>) and CI reporting (ex: <span class="pill">VPS/OVH</span>).</li>
+          <li><b>Servers</b> come from the Devorbit Agent running on your machine (CPU/RAM/disk/network + online/offline).</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>2) Roles & access control</h2>
+        <p class="muted">Organizations are tenant boundaries. Teams are workspaces. Projects belong to teams.</p>
+        <ul>
+          <li><b>SUPER_ADMIN</b>: full control.</li>
+          <li><b>ADMIN</b>: can manage, plus optional capabilities (<span class="pill">canCreateTeams</span>, <span class="pill">canInstallAgent</span>).</li>
+          <li><b>MEMBER</b>: normal access.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>3) User journey</h2>
+        <ul>
+          <li>Sign up or sign in (Email/GitHub)</li>
+          <li>Create or join an organization</li>
+          <li>Create a team (workspace)</li>
+          <li>Connect integrations (GitHub, Vercel)</li>
+          <li>Create projects and link repos / Vercel project IDs</li>
+          <li>Install agent on servers to see metrics</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>4) VPS deployments (OVH / any server)</h2>
+        <p>
+          VPS deployments are recorded via <b>CI reporting</b>. After a deploy succeeds, your CI calls:
+          <span class="pill">POST /api/v1/deployments/report</span> with a deploy token.
+        </p>
+        <div class="callout">
+          <p><b>Per project setup</b> (Projects → Manage → VPS deployments):</p>
+          <ul>
+            <li>Generate a deploy token (shown once)</li>
+            <li>Add repo secrets: <span class="pill">DEVORBIT_PROJECT_ID</span> + <span class="pill">DEVORBIT_DEPLOY_TOKEN</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>5) Troubleshooting</h2>
+        <ul>
+          <li><b>Pipelines empty</b>: check GitHub token permissions (Actions Read) + repo owner/name + runs exist.</li>
+          <li><b>Deployments only show Vercel</b>: expected unless VPS reporting is configured (deploy token + workflow reporting).</li>
+          <li><b>deployments/report fails</b>: wrong project id, wrong token, newline in secret, API unreachable, or proxy issues.</li>
+          <li><b>Server offline</b>: agent not sending heartbeat or stale thresholds too aggressive.</li>
+        </ul>
+        <pre>
+Common “report” mistakes:
+- DEVORBIT_PROJECT_ID must be the Project ID (24-hex), not the Team ID
+- DEVORBIT_DEPLOY_TOKEN must not include a trailing newline
+        </pre>
+      </div>
+
+      <div class="card">
+        <h2>6) What to collect for support</h2>
+        <ul>
+          <li>Screenshot of the page (Pipelines/Deployments/Servers)</li>
+          <li>The project + team you expected</li>
+          <li>CI log lines from the failing step</li>
+          <li>API logs if the server is self-hosted</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
