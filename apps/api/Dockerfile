@@ -10,7 +10,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @devorbit/api build
+RUN pnpm --filter @devorbit/types build && pnpm --filter @devorbit/api build
 
 # Production dependency bundle: pnpm writes only to this directory (not /app).
 # "Failed to create bin" warnings for webpack/browserslist/etc. are expected — those
