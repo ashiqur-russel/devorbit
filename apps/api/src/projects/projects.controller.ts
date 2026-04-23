@@ -60,6 +60,13 @@ export class ProjectsController {
     return this.projectsService.update(projectId, body);
   }
 
+  @Post(':projectId/deploy-token')
+  async rotateDeployToken(@Param('projectId') projectId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
+    const proj = await this.projectsService.assertCanAccessProject(req.user._id.toString(), projectId);
+    await this.teamsService.assertCanManageTeam(req.user._id.toString(), proj.teamId.toString());
+    return this.projectsService.rotateDeployToken(projectId);
+  }
+
   @Delete(':projectId')
   async remove(
     @Param('projectId') projectId: string,

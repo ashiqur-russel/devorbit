@@ -193,5 +193,7 @@ export const api = {
       request<any>(`/projects/${projectId}`, { method: 'PATCH', body: JSON.stringify(patch) }),
     remove: (projectId: string, cascade?: boolean) =>
       request<{ ok: true }>(`/projects/${projectId}${cascade ? '?cascade=1' : ''}`, { method: 'DELETE' }),
+    rotateDeployToken: (projectId: string) =>
+      request<{ token: string }>(`/projects/${projectId}/deploy-token`, { method: 'POST' }),
   },
 };

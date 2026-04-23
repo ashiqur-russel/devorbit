@@ -42,10 +42,9 @@ export class DeploymentsService {
   }
 
   async upsert(data: Partial<Deployment>): Promise<Deployment> {
-    return this.deploymentModel.findOneAndUpdate(
-      { projectId: data.projectId, platform: data.platform, url: data.url },
-      data,
-      { upsert: true, new: true },
-    );
+    const query: Record<string, unknown> = { projectId: data.projectId, platform: data.platform };
+    if (data.externalId) query.externalId = data.externalId;
+    else if (data.url) query.url = data.url;
+    return this.deploymentModel.findOneAndUpdate(query, data, { upsert: true, new: true });
   }
 }

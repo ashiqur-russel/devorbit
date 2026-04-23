@@ -76,4 +76,26 @@ export class TeamsService {
 
     throw new ForbiddenException('You do not have access to this team');
   }
+
+  /**
+   * Management permission for sensitive actions (e.g. deploy tokens).
+   * Allowed if:
+   * - user is team OWNER/ADMIN, OR
+   * - user is an org SUPER_ADMIN/ADMIN for the team’s parent org.
+   */
+  async assertCanManageTeam(userId: string, teamId: string): Promise<Team> {
+    const team = await this.assertCanAccessTeam(userId, teamId);
+    const uid = new Types.ObjectId(userId);
+
+    const entry = (team.members || []).find((m) => m.userId?.equals(uid));
+    if (entry && (entry.role === 'OWNER' || entry.role === 'ADMIN')) return team;
+
+    if (team.organizationId) {
+      const org = await this.orgModel.findById(team.organizationId);
+      const orgEntry = (org?.members || []).find((m) => m.userId?.equals(uid));
+      if (orgEntry && (orgEntry.role === 'SUPER_ADMIN' || orgEntry.role === 'ADMIN')) return team;
+    }
+
+    throw new ForbiddenException('You do not have permission to manage this team');
+  }
 }

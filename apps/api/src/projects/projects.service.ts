@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Project } from './project.schema';
 import { PipelineRun } from '../pipelines/pipeline.schema';
 import { Deployment } from '../deployments/deployment.schema';
 import { TeamsService } from '../teams/teams.service';
+import crypto from 'crypto';
 
 @Injectable()
 export class ProjectsService {
@@ -88,5 +89,31 @@ export class ProjectsService {
 
     await this.projectModel.updateOne({ _id: id }, { $set: { deletedAt: new Date() } });
     return { ok: true };
+  }
+
+  private hashDeployToken(token: string): string {
+    return crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+  }
+
+  async rotateDeployToken(projectId: string): Promise<{ token: string }> {
+    const proj = await this.findActiveById(projectId);
+    if (!proj) throw new NotFoundException('Project not found');
+    const token = crypto.randomBytes(32).toString('hex');
+    const hash = this.hashDeployToken(token);
+    await this.projectModel.updateOne(
+      { _id: proj._id },
+      { $set: { deployTokenHash: hash, deployTokenCreatedAt: new Date() } },
+    );
+    return { token };
+  }
+
+  async verifyDeployToken(projectId: string, token: string): Promise<Project> {
+    const proj = await this.findActiveById(projectId);
+    if (!proj) throw new NotFoundException('Project not found');
+    const expected = proj.deployTokenHash || '';
+    if (!expected) throw new ForbiddenException('Deploy token is not configured for this project');
+    const actual = this.hashDeployToken(token);
+    if (actual !== expected) throw new ForbiddenException('Invalid deploy token');
+    return proj;
   }
 }

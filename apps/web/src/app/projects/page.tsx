@@ -30,6 +30,8 @@ export default function ProjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deployToken, setDeployToken] = useState<string | null>(null);
+  const [deployTokenLoading, setDeployTokenLoading] = useState(false);
 
   const [active, setActive] = useState<ProjectRow | null>(null);
   const [draft, setDraft] = useState<{
@@ -66,6 +68,7 @@ export default function ProjectsPage() {
 
   const openDetails = (p: ProjectRow) => {
     setError(null);
+    setDeployToken(null);
     setActive(p);
     setDraft({
       name: p.name || '',
@@ -82,6 +85,7 @@ export default function ProjectsPage() {
     if (savingId || deletingId) return;
     setActive(null);
     setDraft(null);
+    setDeployToken(null);
   };
 
   const saveDetails = async () => {
@@ -140,6 +144,20 @@ export default function ProjectsPage() {
       setError(e instanceof Error ? e.message : 'Failed to delete project');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const rotateDeployToken = async () => {
+    if (!active) return;
+    setDeployTokenLoading(true);
+    setError(null);
+    try {
+      const res = await api.projects.rotateDeployToken(active._id);
+      setDeployToken(res.token);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to generate deploy token');
+    } finally {
+      setDeployTokenLoading(false);
     }
   };
 
@@ -404,6 +422,43 @@ export default function ProjectsPage() {
                   still come from GitHub Actions / GitLab CI.
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-outline">VPS deployments (OVH / any server)</p>
+              <p className="mt-2 text-[11px] text-on-surface-variant">
+                Generate a deploy token and add it to your CI so Devorbit can record VPS deployments in the Deployments
+                page.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={rotateDeployToken}
+                  disabled={!active || deployTokenLoading || Boolean(savingId) || Boolean(deletingId)}
+                  className="rounded-xl bg-surface-container-highest px-4 py-2 text-xs font-bold uppercase tracking-widest text-on-surface transition-colors hover:bg-surface-bright disabled:opacity-50"
+                >
+                  {deployTokenLoading ? 'Generating…' : deployToken ? 'Rotate token' : 'Generate token'}
+                </button>
+                {deployToken ? (
+                  <span className="rounded-lg border border-outline-variant/15 bg-surface-container-high px-3 py-2 font-mono text-[11px] text-on-surface">
+                    {deployToken}
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-outline">Token is shown once after generation.</span>
+                )}
+              </div>
+              {active ? (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-outline">GitHub Secret: DEVORBIT_PROJECT_ID</p>
+                    <p className="mt-1 font-mono text-[11px] text-on-surface">{active._id}</p>
+                  </div>
+                  <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-outline">GitHub Secret: DEVORBIT_DEPLOY_TOKEN</p>
+                    <p className="mt-1 text-[11px] text-on-surface-variant">Use the generated token above.</p>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {draft.repoOwner && draft.repoName ? (

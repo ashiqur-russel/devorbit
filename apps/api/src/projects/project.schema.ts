@@ -24,6 +24,16 @@ export class Project extends Document {
   @Prop()
   vercelProjectId: string;
 
+  /**
+   * A sha256 hash of a per-project deploy token.
+   * This allows CI/CD to report deployments without a user JWT.
+   */
+  @Prop()
+  deployTokenHash?: string;
+
+  @Prop()
+  deployTokenCreatedAt?: Date;
+
   /** Soft-delete flag. Archived projects are excluded from sync + lists by default. */
   @Prop()
   deletedAt?: Date;

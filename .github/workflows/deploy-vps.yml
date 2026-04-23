@@ -38,3 +38,31 @@ jobs:
 
             docker compose ps
 
+      - name: Report deployment to Devorbit
+        env:
+          DEVORBIT_API_URL: ${{ secrets.DEVORBIT_API_URL }}
+          DEVORBIT_PROJECT_ID: ${{ secrets.DEVORBIT_PROJECT_ID }}
+          DEVORBIT_DEPLOY_TOKEN: ${{ secrets.DEVORBIT_DEPLOY_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEVORBIT_API_URL:-}" ] || [ -z "${DEVORBIT_PROJECT_ID:-}" ] || [ -z "${DEVORBIT_DEPLOY_TOKEN:-}" ]; then
+            echo "Skipping Devorbit deployment report (missing DEVORBIT_* secrets)."
+            exit 0
+          fi
+          curl -sS -X POST "${DEVORBIT_API_URL%/}/api/v1/deployments/report" \
+            -H "Content-Type: application/json" \
+            -H "x-devorbit-deploy-token: ${DEVORBIT_DEPLOY_TOKEN}" \
+            --data-binary "$(jq -nc \
+              --arg projectId "${DEVORBIT_PROJECT_ID}" \
+              --arg platform "OVH" \
+              --arg status "success" \
+              --arg environment "production" \
+              --arg branch "${HEAD_BRANCH}" \
+              --arg commitSha "${HEAD_SHA}" \
+              --arg externalId "gh-${RUN_ID}" \
+              '{projectId:$projectId,platform:$platform,status:$status,environment:$environment,branch:$branch,commitSha:$commitSha,externalId:$externalId,deployedAt:(now|todateiso8601)}' \
+            )"
+
