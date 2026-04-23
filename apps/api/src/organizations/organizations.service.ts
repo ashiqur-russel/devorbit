@@ -20,6 +20,17 @@ function slugify(name: string): string {
   return base || 'org';
 }
 
+function objectIdsEqual(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return false;
+  try {
+    const A = a instanceof Types.ObjectId ? a : new Types.ObjectId(String(a));
+    const B = b instanceof Types.ObjectId ? b : new Types.ObjectId(String(b));
+    return A.equals(B);
+  } catch {
+    return String(a) === String(b);
+  }
+}
+
 @Injectable()
 export class OrganizationsService {
   constructor(
@@ -138,9 +149,15 @@ export class OrganizationsService {
     if (!entry || entry.role !== 'ADMIN') {
       throw new BadRequestException('That user must be an organization admin first (use Promote org admin).');
     }
-    entry.canCreateTeams = dto.canCreateTeams;
-    entry.canInstallAgent = dto.canInstallAgent;
-    await org.save();
+    await this.orgModel.updateOne(
+      { _id: org._id, members: { $elemMatch: { userId: tid, role: 'ADMIN' } } },
+      {
+        $set: {
+          'members.$.canCreateTeams': dto.canCreateTeams,
+          'members.$.canInstallAgent': dto.canInstallAgent,
+        },
+      },
+    );
     return { ok: true, userId: tid.toString(), canCreateTeams: dto.canCreateTeams, canInstallAgent: dto.canInstallAgent };
   }
 
@@ -168,7 +185,7 @@ export class OrganizationsService {
 
     const team = await this.teamModel.findById(teamId);
     if (!team) throw new NotFoundException('Team not found');
-    if (!team.organizationId || !team.organizationId.equals(org._id as Types.ObjectId)) {
+    if (!objectIdsEqual(team.organizationId, org._id)) {
       throw new BadRequestException('Team does not belong to this organization');
     }
 
@@ -189,14 +206,27 @@ export class OrganizationsService {
 
     const inOrg = org.members.some((m) => m.userId.equals(tid));
     if (!inOrg) {
-      org.members.push({ userId: tid, role: 'MEMBER', canCreateTeams: false, canInstallAgent: false });
-      await org.save();
+      await this.orgModel.updateOne(
+        { _id: org._id, members: { $not: { $elemMatch: { userId: tid } } } },
+        {
+          $push: {
+            members: {
+              userId: tid,
+              role: 'MEMBER',
+              canCreateTeams: false,
+              canInstallAgent: false,
+            },
+          },
+        },
+      );
     }
 
     const alreadyTeam = team.members.some((m) => m.userId.equals(tid));
     if (!alreadyTeam) {
-      team.members.push({ userId: tid, role: 'MEMBER' });
-      await team.save();
+      await this.teamModel.updateOne(
+        { _id: team._id, members: { $not: { $elemMatch: { userId: tid } } } },
+        { $push: { members: { userId: tid, role: 'MEMBER' } } },
+      );
     }
 
     return { ok: true, userId: tid.toString(), teamId: team._id.toString() };
@@ -219,21 +249,31 @@ export class OrganizationsService {
       throw new BadRequestException('Cannot change the organization super admin role');
     }
     if (!entry) {
-      org.members.push({
-        userId: tid,
-        role: 'ADMIN',
-        canCreateTeams: false,
-        canInstallAgent: false,
-      });
+      await this.orgModel.updateOne(
+        { _id: org._id, members: { $not: { $elemMatch: { userId: tid } } } },
+        {
+          $push: {
+            members: {
+              userId: tid,
+              role: 'ADMIN',
+              canCreateTeams: false,
+              canInstallAgent: false,
+            },
+          },
+        },
+      );
     } else {
       const wasNotAdmin = entry.role !== 'ADMIN';
-      entry.role = 'ADMIN';
+      const $set: Record<string, unknown> = { 'members.$.role': 'ADMIN' };
       if (wasNotAdmin) {
-        entry.canCreateTeams = false;
-        entry.canInstallAgent = false;
+        $set['members.$.canCreateTeams'] = false;
+        $set['members.$.canInstallAgent'] = false;
       }
+      await this.orgModel.updateOne(
+        { _id: org._id, members: { $elemMatch: { userId: tid } } },
+        { $set },
+      );
     }
-    await org.save();
     return { ok: true, userId: tid.toString(), role: 'ADMIN' };
   }
 

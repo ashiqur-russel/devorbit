@@ -17,6 +17,17 @@ import { MailService } from '../mail/mail.service';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+function objectIdsEqual(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return false;
+  try {
+    const A = a instanceof Types.ObjectId ? a : new Types.ObjectId(String(a));
+    const B = b instanceof Types.ObjectId ? b : new Types.ObjectId(String(b));
+    return A.equals(B);
+  } catch {
+    return String(a) === String(b);
+  }
+}
+
 @Injectable()
 export class InvitationsService {
   private readonly logger = new Logger(InvitationsService.name);
@@ -159,6 +170,9 @@ export class InvitationsService {
 
   /** After email user is created: attach to org/team and close invite (single-use). */
   async completeInviteForNewUser(invitationId: string, newUserId: string) {
+    if (!Types.ObjectId.isValid(invitationId)) {
+      throw new BadRequestException('Invalid invitation id');
+    }
     const closed = await this.invitationModel.findOneAndUpdate(
       { _id: new Types.ObjectId(invitationId), status: 'pending' },
       { $set: { status: 'accepted' } },
@@ -168,25 +182,44 @@ export class InvitationsService {
       throw new BadRequestException('Invite was already used or is no longer valid');
     }
 
-    const org = await this.orgModel.findById(closed.organizationId);
-    if (!org) throw new NotFoundException('Organization missing');
+    const orgOid =
+      closed.organizationId instanceof Types.ObjectId
+        ? closed.organizationId
+        : new Types.ObjectId(String(closed.organizationId));
+
+    const orgExists = await this.orgModel.exists({ _id: orgOid });
+    if (!orgExists) throw new NotFoundException('Organization missing');
+
     const uid = new Types.ObjectId(newUserId);
 
-    const already = org.members.some((m) => m.userId.equals(uid));
-    if (!already) {
-      org.members.push({ userId: uid, role: 'MEMBER', canCreateTeams: false, canInstallAgent: false });
-      await org.save();
-    }
+    /**
+     * Use atomic $push instead of load + save on Organization. Older member subdocuments in DB may
+     * omit `canCreateTeams` / `canInstallAgent`; re-saving the whole document can trigger Mongoose
+     * validation errors and a 500 on invite registration.
+     */
+    await this.orgModel.updateOne(
+      { _id: orgOid, members: { $not: { $elemMatch: { userId: uid } } } },
+      {
+        $push: {
+          members: {
+            userId: uid,
+            role: 'MEMBER',
+            canCreateTeams: false,
+            canInstallAgent: false,
+          },
+        },
+      },
+    );
 
     if (closed.teamId) {
-      const team = await this.teamModel.findById(closed.teamId);
-      if (team && team.organizationId?.equals(org._id as Types.ObjectId)) {
-        const onTeam = team.members.some((m) => m.userId.equals(uid));
-        if (!onTeam) {
-          team.members.push({ userId: uid, role: 'MEMBER' });
-          await team.save();
-        }
-      }
+      const team = await this.teamModel.findById(closed.teamId).select('organizationId');
+      if (!team) return;
+      if (!objectIdsEqual(team.organizationId, orgOid)) return;
+
+      await this.teamModel.updateOne(
+        { _id: closed.teamId, members: { $not: { $elemMatch: { userId: uid } } } },
+        { $push: { members: { userId: uid, role: 'MEMBER' } } },
+      );
     }
   }
 
