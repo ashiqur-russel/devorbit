@@ -30,6 +30,8 @@ export class DeploymentsReportController {
   ) {
     if (!token) throw new BadRequestException('Missing deploy token header');
     if (!body?.projectId) throw new BadRequestException('Missing projectId');
+    if (!Types.ObjectId.isValid(body.projectId)) throw new BadRequestException('Invalid projectId');
+    if (body.serverId && !Types.ObjectId.isValid(body.serverId)) throw new BadRequestException('Invalid serverId');
 
     const project = await this.projectsService.verifyDeployToken(body.projectId, token);
 
