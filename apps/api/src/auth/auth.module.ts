@@ -6,6 +6,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GithubStrategy } from './strategies/github.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { SamlStrategy } from './strategies/saml.strategy';
 import { UsersModule } from '../users/users.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { TeamsModule } from '../teams/teams.module';
@@ -27,7 +29,7 @@ import { InvitationsModule } from '../invitations/invitations.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, GithubStrategy, JwtStrategy],
+  providers: [AuthService, GithubStrategy, JwtStrategy, GoogleStrategy, SamlStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

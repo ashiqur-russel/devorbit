@@ -30,7 +30,31 @@ export class AuthController {
 
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
-  async githubCallback(@Req() req, @Res() res) {
+  async githubCallback(@Req() req: any, @Res() res: any) {
+    const token = this.authService.signToken(req.user._id.toString());
+    const webUrl = this.config.get<string>('WEB_URL') || 'http://localhost:3000';
+    res.redirect(`${webUrl}/auth/callback?token=${token}`);
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: any, @Res() res: any) {
+    const token = this.authService.signToken(req.user._id.toString());
+    const webUrl = this.config.get<string>('WEB_URL') || 'http://localhost:3000';
+    res.redirect(`${webUrl}/auth/callback?token=${token}`);
+  }
+
+  @Get('saml')
+  @UseGuards(AuthGuard('saml'))
+  samlAuth() {}
+
+  @Post('saml/callback')
+  @UseGuards(AuthGuard('saml'))
+  async samlCallback(@Req() req: any, @Res() res: any) {
     const token = this.authService.signToken(req.user._id.toString());
     const webUrl = this.config.get<string>('WEB_URL') || 'http://localhost:3000';
     res.redirect(`${webUrl}/auth/callback?token=${token}`);
@@ -38,7 +62,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  getMe(@Req() req) {
+  getMe(@Req() req: any) {
     return req.user;
   }
 }

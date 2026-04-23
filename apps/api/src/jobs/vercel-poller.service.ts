@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { ProjectsService } from '../projects/projects.service';
 import { DeploymentsService } from '../deployments/deployments.service';
@@ -28,6 +29,7 @@ export class VercelPollerService implements OnModuleInit, OnModuleDestroy {
     private readonly integrationsService: IntegrationsService,
     private readonly projectsService: ProjectsService,
     private readonly deploymentsService: DeploymentsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   onModuleInit() {
@@ -69,6 +71,11 @@ export class VercelPollerService implements OnModuleInit, OnModuleDestroy {
           status: this.mapStatus(dep.state),
           url: dep.url ? `https://${dep.url}` : undefined,
           deployedAt: dep.createdAt ? new Date(dep.createdAt) : new Date(),
+        });
+        this.eventEmitter.emit('deployment.upserted', {
+          projectId: String(project._id),
+          platform: 'VERCEL',
+          status: this.mapStatus(dep.state),
         });
       }
     } catch (err) {

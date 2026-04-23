@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ServersService } from './servers.service';
 
 /**
@@ -14,6 +15,7 @@ export class ServersStaleService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly servers: ServersService,
     private readonly config: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   onModuleInit() {
@@ -33,8 +35,14 @@ export class ServersStaleService implements OnModuleInit, OnModuleDestroy {
     const maxAgeMs = Number(this.config.get('AGENT_OFFLINE_AFTER_MS') ?? 180_000);
     const threshold = Math.max(30_000, maxAgeMs);
     try {
+      const staleServers = await this.servers.findStaleAgents(threshold);
       const n = await this.servers.markStaleAgentsOffline(threshold);
-      if (n > 0) this.logger.log(`Marked ${n} server(s) offline (no heartbeat for ${threshold}ms)`);
+      if (n > 0) {
+        this.logger.log(`Marked ${n} server(s) offline (no heartbeat for ${threshold}ms)`);
+        for (const s of staleServers) {
+          this.eventEmitter.emit('server.offline', { serverId: s._id.toString(), name: s.name });
+        }
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       this.logger.warn(`Stale agent check failed: ${msg}`);

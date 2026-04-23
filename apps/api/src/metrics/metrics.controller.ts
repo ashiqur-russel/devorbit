@@ -31,4 +31,18 @@ export class MetricsController {
     if (server) await this.teamsService.assertCanAccessTeam(req.user._id.toString(), String(server.teamId));
     return this.metricsService.getLatest(serverId);
   }
+
+  @Get(':serverId/processes/latest')
+  async getLatestProcesses(@Param('serverId') serverId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
+    const server = await this.serversService.findById(serverId);
+    if (server) await this.teamsService.assertCanAccessTeam(req.user._id.toString(), String(server.teamId));
+    return this.metricsService.getLatestProcesses(serverId);
+  }
+
+  @Get(':serverId/docker')
+  async getLatestDocker(@Param('serverId') serverId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
+    const server = await this.serversService.findById(serverId);
+    if (server) await this.teamsService.assertCanAccessTeam(req.user._id.toString(), String(server.teamId));
+    return this.metricsService.getLatestDocker(serverId);
+  }
 }

@@ -174,11 +174,38 @@ export const api = {
     get: (id: string) => request<any>(`/servers/${id}`),
     register: (teamId: string, name: string) =>
       request<any>('/servers', { method: 'POST', body: JSON.stringify({ teamId, name }) }),
+    setDockerEnabled: (id: string, enabled: boolean) =>
+      request<any>(`/servers/${id}/docker`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
   },
   metrics: {
     recent: (serverId: string, minutes = 15) =>
       request<any[]>(`/metrics/${serverId}?minutes=${minutes}`),
     latest: (serverId: string) => request<any>(`/metrics/${serverId}/latest`),
+    processes: (serverId: string) => request<any[]>(`/metrics/${serverId}/processes/latest`),
+    docker: (serverId: string) => request<any[]>(`/metrics/${serverId}/docker`),
+  },
+  alerts: {
+    listRules: (teamId: string) => request<any[]>(`/alerts/rules?teamId=${teamId}`),
+    createRule: (body: {
+      teamId: string;
+      name: string;
+      metric: string;
+      condition: string;
+      threshold: number;
+      windowMinutes?: number;
+      channelIds?: string[];
+    }) => request<any>('/alerts/rules', { method: 'POST', body: JSON.stringify(body) }),
+    deleteRule: (id: string) => request<any>(`/alerts/rules/${id}`, { method: 'DELETE' }),
+    listChannels: (teamId: string) => request<any[]>(`/alerts/channels?teamId=${teamId}`),
+    createChannel: (body: {
+      teamId: string;
+      name: string;
+      type: 'email' | 'slack' | 'webhook';
+      destination: string;
+    }) => request<any>('/alerts/channels', { method: 'POST', body: JSON.stringify(body) }),
+    deleteChannel: (id: string) => request<any>(`/alerts/channels/${id}`, { method: 'DELETE' }),
+    listIncidents: (teamId: string) => request<any[]>(`/alerts/incidents?teamId=${teamId}`),
+    resolveIncident: (id: string) => request<any>(`/alerts/incidents/${id}/resolve`, { method: 'PATCH' }),
   },
   integrations: {
     list: (teamId: string) => request<any[]>(`/integrations/team/${teamId}`),

@@ -26,6 +26,12 @@ export class Server extends Document {
 
   @Prop({ enum: ['online', 'offline', 'degraded'], default: 'offline' })
   status: string;
+
+  @Prop({ default: false })
+  dockerEnabled: boolean;
+
+  @Prop()
+  region: string;
 }
 
 export const ServerSchema = SchemaFactory.createForClass(Server);

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TeamsModule } from './teams/teams.module';
@@ -14,6 +15,8 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { JobsModule } from './jobs/jobs.module';
 import { MailModule } from './mail/mail.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { AlertsModule } from './alerts/alerts.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -24,6 +27,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
         uri: config.get<string>('MONGODB_URI'),
       }),
     }),
+    EventEmitterModule.forRoot(),
     AuthModule,
     UsersModule,
     TeamsModule,
@@ -37,6 +41,8 @@ import { OrganizationsModule } from './organizations/organizations.module';
     WebsocketsModule,
     JobsModule,
     MailModule,
+    AlertsModule,
+    AuditModule,
   ],
 })
 export class AppModule {}

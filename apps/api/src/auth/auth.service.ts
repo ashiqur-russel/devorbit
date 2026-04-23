@@ -26,6 +26,19 @@ export class AuthService {
     return this.usersService.findOrCreate(profile);
   }
 
+  async validateGoogleUser(profile: {
+    googleId: string;
+    name: string;
+    email: string;
+    avatar: string;
+  }) {
+    return this.usersService.findOrCreateGoogle(profile);
+  }
+
+  async validateSamlUser(profile: { samlNameId: string; email: string; name: string }) {
+    return this.usersService.findOrCreateSaml(profile);
+  }
+
   async registerWithOrganization(dto: RegisterDto): Promise<{ user: User; organizationId: string }> {
     const name = (dto.displayName || dto.email.split('@')[0]).trim();
     const inviteTok = dto.inviteToken?.trim();

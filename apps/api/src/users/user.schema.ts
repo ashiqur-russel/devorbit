@@ -7,6 +7,14 @@ export class User extends Document {
   @Prop({ trim: true })
   githubId: string;
 
+  /** Present for Google sign-in. */
+  @Prop({ trim: true })
+  googleId: string;
+
+  /** Present for SAML sign-in. */
+  @Prop({ trim: true })
+  samlNameId: string;
+
   @Prop({ required: true })
   name: string;
 
@@ -29,10 +37,27 @@ UserSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      // Keep this partial index compatible with older MongoDB versions:
-      // - We already coerce null/empty-string -> undefined in pre('validate') below
-      // - So indexing only when githubId is a string is sufficient
       githubId: { $type: 'string' },
+    },
+  },
+);
+
+UserSchema.index(
+  { googleId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      googleId: { $type: 'string' },
+    },
+  },
+);
+
+UserSchema.index(
+  { samlNameId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      samlNameId: { $type: 'string' },
     },
   },
 );
@@ -41,6 +66,14 @@ UserSchema.pre('validate', function (next) {
   const gh = (this as User & { githubId?: string | null }).githubId;
   if (gh === null || gh === '') {
     (this as User & { githubId?: string }).githubId = undefined;
+  }
+  const go = (this as User & { googleId?: string | null }).googleId;
+  if (go === null || go === '') {
+    (this as User & { googleId?: string }).googleId = undefined;
+  }
+  const saml = (this as User & { samlNameId?: string | null }).samlNameId;
+  if (saml === null || saml === '') {
+    (this as User & { samlNameId?: string }).samlNameId = undefined;
   }
   next();
 });

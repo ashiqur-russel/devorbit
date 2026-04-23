@@ -55,4 +55,13 @@ export class ServersService {
     );
     return res.modifiedCount ?? 0;
   }
+
+  async findStaleAgents(maxAgeMs: number): Promise<Server[]> {
+    const cutoff = new Date(Date.now() - maxAgeMs);
+    return this.serverModel.find({ status: { $in: ['online', 'degraded'] }, lastSeen: { $lt: cutoff } });
+  }
+
+  async setDockerEnabled(serverId: string): Promise<void> {
+    await this.serverModel.findByIdAndUpdate(serverId, { dockerEnabled: true });
+  }
 }

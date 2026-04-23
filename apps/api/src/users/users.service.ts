@@ -62,6 +62,62 @@ export class UsersService implements OnModuleInit {
     });
   }
 
+  async findOrCreateGoogle(profile: {
+    googleId: string;
+    name: string;
+    email: string;
+    avatar: string;
+  }): Promise<User> {
+    const existing = await this.userModel.findOne({ googleId: profile.googleId });
+    if (existing) return existing;
+
+    const email = (profile.email || '').toLowerCase().trim();
+    if (email) {
+      const byEmail = await this.userModel.findOne({ email });
+      if (byEmail) {
+        if (!byEmail.googleId) {
+          return this.userModel
+            .findByIdAndUpdate(byEmail._id, { googleId: profile.googleId, avatar: profile.avatar || byEmail.avatar }, { new: true })
+            .exec();
+        }
+        return byEmail;
+      }
+    }
+
+    const fallbackEmail = email || `google-${profile.googleId}@users.devorbit.local`;
+    return this.userModel.create({
+      googleId: profile.googleId,
+      name: profile.name,
+      email: fallbackEmail,
+      avatar: profile.avatar,
+    });
+  }
+
+  async findOrCreateSaml(profile: { samlNameId: string; email: string; name: string }): Promise<User> {
+    const existing = await this.userModel.findOne({ samlNameId: profile.samlNameId });
+    if (existing) return existing;
+
+    const email = (profile.email || '').toLowerCase().trim();
+    if (email) {
+      const byEmail = await this.userModel.findOne({ email });
+      if (byEmail) {
+        if (!byEmail.samlNameId) {
+          return this.userModel
+            .findByIdAndUpdate(byEmail._id, { samlNameId: profile.samlNameId }, { new: true })
+            .exec();
+        }
+        return byEmail;
+      }
+    }
+
+    const fallbackEmail = email || `saml-${profile.samlNameId.replace(/[^a-z0-9]/gi, '-')}@users.devorbit.local`;
+    return this.userModel.create({
+      samlNameId: profile.samlNameId,
+      name: profile.name || profile.samlNameId,
+      email: fallbackEmail,
+    });
+  }
+
   async findById(id: string): Promise<User | null> {
     return this.userModel.findById(id);
   }

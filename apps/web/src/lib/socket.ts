@@ -43,3 +43,27 @@ export function subscribeToServer(
     s.off('metric:update', handler);
   };
 }
+
+export function subscribeToAlerts(onAlert: (alert: any) => void): () => void {
+  const s = getSocket();
+  if (!s.connected) s.connect();
+  s.on('alert:fired', onAlert);
+  return () => s.off('alert:fired', onAlert);
+}
+
+export function subscribeToServerLogs(
+  serverId: string,
+  onLog: (line: { ts: string; text: string }) => void,
+): () => void {
+  const s = getSocket();
+  if (!s.connected) s.connect();
+  s.emit('subscribe:logs', serverId);
+  const handler = (payload: { serverId: string; ts: string; text: string }) => {
+    if (payload?.serverId === serverId) onLog({ ts: payload.ts, text: payload.text });
+  };
+  s.on('log:line', handler);
+  return () => {
+    s.emit('unsubscribe:logs', serverId);
+    s.off('log:line', handler);
+  };
+}

@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { ProjectsService } from '../projects/projects.service';
 import { PipelinesService } from '../pipelines/pipelines.service';
@@ -32,6 +33,7 @@ export class GithubPollerService implements OnModuleInit, OnModuleDestroy {
     private readonly integrationsService: IntegrationsService,
     private readonly projectsService: ProjectsService,
     private readonly pipelinesService: PipelinesService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   onModuleInit() {
@@ -93,6 +95,11 @@ export class GithubPollerService implements OnModuleInit, OnModuleDestroy {
           triggeredBy: run.triggering_actor?.login,
           startedAt: run.run_started_at ? new Date(run.run_started_at) : undefined,
           finishedAt: run.updated_at ? new Date(run.updated_at) : undefined,
+        });
+        this.eventEmitter.emit('pipeline.upserted', {
+          projectId: String(project._id),
+          runId: String(run.id),
+          status: this.mapStatus(run.conclusion ?? run.status),
         });
       }
     } catch (err) {
