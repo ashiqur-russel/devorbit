@@ -10,6 +10,10 @@
 #
 # If "production" has no protection rules, the job runs immediately (same as before).
 name: Deploy to VPS
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch' &&
+      format('Manual · VPS deploy {0}', github.sha) ||
+      format('After CI · VPS deploy {0}', github.event.workflow_run.head_sha) }}
 
 on:
   workflow_run:
@@ -23,8 +27,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Runs first (no environment gate) so the run log shows where to click when deploy is waiting.
-  approval-hint:
+  # Runs first (no environment gate). Name includes "manual" so it is easy to find in the sidebar.
+  manual-approval-hint:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -36,10 +40,10 @@ jobs:
       - name: Where to approve (if deploy is waiting)
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "If the next job (deploy) waits for you, GitHub does NOT put the button on the repo home page."
+          echo "If the next job (manual-vps-deploy) waits for you, GitHub does NOT put the button on the repo home page."
           echo ""
           echo "1) Stay on THIS workflow run (Deploy to VPS)."
-          echo "2) In the LEFT sidebar, click the job named:  deploy   (not approval-hint)."
+          echo "2) In the LEFT sidebar, click the job named:  manual-vps-deploy   (not manual-approval-hint)."
           echo "3) On the right, look for a yellow panel: 'Review pending deployments' or"
           echo "   'Waiting for approval' → click  Review deployments  → check  production  → Approve and deploy."
           echo ""
@@ -50,8 +54,8 @@ jobs:
           echo "→ ensure 'Required reviewers' is ON and your user is listed."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-  deploy:
-    needs: [approval-hint]
+  manual-vps-deploy:
+    needs: [manual-approval-hint]
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 20
