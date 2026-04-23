@@ -10,7 +10,7 @@ import AgentStopCommands from '@/components/agent/AgentStopCommands';
 export default function AgentSetupPage() {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
-  const { agentToken, provisioning, error, connected } = useAgentInstallBootstrap();
+  const { agentToken, provisioning, error, connected, trigger } = useAgentInstallBootstrap({ autoCreate: false });
 
   const { full, display } = useMemo(() => getAgentInstallCommand(agentToken), [agentToken]);
 
@@ -59,16 +59,26 @@ export default function AgentSetupPage() {
         <div className="bg-surface-container-lowest p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <code className="font-mono text-sm text-on-surface break-all min-w-0">
             <span className="text-secondary">$</span>{' '}
-            {provisioning ? '… preparing …' : display}
+            {provisioning ? '… preparing …' : agentToken ? display : 'Click “Generate token” to create (or reuse) a server + install token'}
           </code>
-          <button
-            type="button"
-            onClick={handleCopy}
-            disabled={provisioning || !agentToken}
-            className="shrink-0 flex items-center justify-center gap-2 bg-primary text-on-primary-container px-4 py-2 rounded-xl text-xs font-bold font-headline uppercase tracking-wider hover:shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all disabled:opacity-40"
-          >
-            {copied ? '✓ Copied' : '⧉ Copy'}
-          </button>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => trigger()}
+              disabled={provisioning}
+              className="flex items-center justify-center gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-highest px-4 py-2 text-xs font-bold font-headline uppercase tracking-wider text-on-surface transition-colors hover:bg-surface-bright disabled:opacity-40"
+            >
+              {provisioning ? 'Working…' : 'Generate token'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={provisioning || !agentToken}
+              className="shrink-0 flex items-center justify-center gap-2 bg-primary text-on-primary-container px-4 py-2 rounded-xl text-xs font-bold font-headline uppercase tracking-wider hover:shadow-[0_0_15px_rgba(208,188,255,0.3)] transition-all disabled:opacity-40"
+            >
+              {copied ? '✓ Copied' : '⧉ Copy'}
+            </button>
+          </div>
         </div>
         {copyError && (
           <p className="px-6 pb-4 text-xs text-error font-mono">

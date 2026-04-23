@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { getAgentInstallCommand } from '@/lib/agent-install-command';
@@ -10,12 +10,29 @@ import AgentStopCommands from '@/components/agent/AgentStopCommands';
 export default function OnboardingStep3() {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const pendingCopy = useRef(false);
   const router = useRouter();
-  const { agentToken, provisioning, error, connected } = useAgentInstallBootstrap();
+  const { agentToken, provisioning, error, connected, trigger } = useAgentInstallBootstrap({ autoCreate: false });
 
   const { full, display } = useMemo(() => getAgentInstallCommand(agentToken), [agentToken]);
 
+  // Auto-copy once token arrives after the user clicked "Get Token"
+  useEffect(() => {
+    if (agentToken && pendingCopy.current) {
+      pendingCopy.current = false;
+      copyTextToClipboard(full).then((ok) => {
+        if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); }
+        else setCopyError(true);
+      });
+    }
+  }, [agentToken, full]);
+
   const handleCopy = async () => {
+    if (!agentToken) {
+      pendingCopy.current = true;
+      trigger();
+      return;
+    }
     setCopyError(false);
     const ok = await copyTextToClipboard(full);
     if (ok) {
@@ -76,16 +93,16 @@ export default function OnboardingStep3() {
             <div className="flex-1 font-mono text-sm leading-loose min-w-0">
               <span className="text-secondary mr-3">$</span>
               <code className="text-on-surface break-all">
-                {provisioning ? '… preparing install command …' : display}
+                {provisioning ? '… preparing install command …' : agentToken ? display : 'Click "Get Token" to generate your install command'}
               </code>
             </div>
             <button
               type="button"
               onClick={handleCopy}
-              disabled={provisioning || !agentToken}
+              disabled={provisioning}
               className="flex items-center gap-2 bg-primary text-on-primary-container px-6 py-3 rounded-xl font-headline font-bold text-sm uppercase tracking-tight transition-all active:scale-95 hover:shadow-[0_0_20px_rgba(208,188,255,0.3)] shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {copied ? '✓ Copied!' : '⧉ Copy Command'}
+              {copied ? '✓ Copied!' : agentToken ? '⧉ Copy Command' : '⚡ Get Token'}
             </button>
           </div>
           {copyError && (

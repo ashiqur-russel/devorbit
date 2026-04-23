@@ -1,22 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { DEVORBIT_TEAM_ID_KEY } from './use-team-id';
+
 const AGENT_TOKEN_KEY = 'devorbit_agent_token';
 
 /**
  * Ensures the user has a team + at least one server (for agentToken), then polls until one is online.
+ *
+ * Pass { autoCreate: false } to skip automatic server creation on mount — the returned
+ * `trigger()` function must be called explicitly to start provisioning.
  */
-export function useAgentInstallBootstrap() {
+export function useAgentInstallBootstrap({ autoCreate = false }: { autoCreate?: boolean } = {}) {
   const [teamId, setTeamId] = useState('');
   const [agentToken, setAgentToken] = useState('');
-  const [provisioning, setProvisioning] = useState(true);
+  const [provisioning, setProvisioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [triggered, setTriggered] = useState(autoCreate);
+  const cancelRef = useRef(false);
+
+  function trigger() {
+    setTriggered(true);
+  }
 
   useEffect(() => {
-    let cancelled = false;
+    if (!triggered) return;
+
+    cancelRef.current = false;
 
     (async () => {
       try {
@@ -33,7 +45,7 @@ export function useAgentInstallBootstrap() {
         let orgId = orgList[0]?._id ? String(orgList[0]._id) : '';
 
         const teamsList = await api.teams.mine();
-        if (cancelled) return;
+        if (cancelRef.current) return;
         const tl = Array.isArray(teamsList) ? teamsList : [];
 
         let tid = tl[0]?._id ? String(tl[0]._id) : '';
@@ -49,11 +61,11 @@ export function useAgentInstallBootstrap() {
           }
           if (!orgId) {
             const o = await api.organizations.create(workspace);
-            if (cancelled) return;
+            if (cancelRef.current) return;
             orgId = String(o._id);
           }
           const created = await api.teams.create(workspace, orgId);
-          if (cancelled) return;
+          if (cancelRef.current) return;
           tid = String(created._id);
         }
 
@@ -61,7 +73,7 @@ export function useAgentInstallBootstrap() {
         if (typeof window !== 'undefined') localStorage.setItem(DEVORBIT_TEAM_ID_KEY, tid);
 
         let list = await api.servers.byTeam(tid);
-        if (cancelled) return;
+        if (cancelRef.current) return;
 
         let tok = '';
         if (list.length === 0) {
@@ -75,22 +87,22 @@ export function useAgentInstallBootstrap() {
         } else {
           tok = list[0].agentToken;
         }
-        if (cancelled) return;
+        if (cancelRef.current) return;
 
         setAgentToken(tok);
         if (typeof window !== 'undefined') localStorage.setItem(AGENT_TOKEN_KEY, tok);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : 'Could not prepare agent';
-        if (!cancelled) setError(msg);
+        if (!cancelRef.current) setError(msg);
       } finally {
-        if (!cancelled) setProvisioning(false);
+        if (!cancelRef.current) setProvisioning(false);
       }
     })();
 
     return () => {
-      cancelled = true;
+      cancelRef.current = true;
     };
-  }, []);
+  }, [triggered]);
 
   useEffect(() => {
     if (!teamId || !agentToken || connected) return;
@@ -109,5 +121,5 @@ export function useAgentInstallBootstrap() {
     return () => clearInterval(iv);
   }, [teamId, agentToken, connected]);
 
-  return { teamId, agentToken, provisioning, error, connected };
+  return { teamId, agentToken, provisioning, error, connected, trigger };
 }
