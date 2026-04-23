@@ -7,9 +7,9 @@ import { DeploymentsService } from './deployments.service';
 export class DeploymentsController {
   constructor(private deploymentsService: DeploymentsService) {}
 
-  @Get('recent')
-  findAll(@Query('limit') limit?: string) {
-    return this.deploymentsService.findAll(limit ? parseInt(limit) : 50);
+  @Get('team/:teamId/recent')
+  findRecentByTeam(@Param('teamId') teamId: string, @Query('limit') limit?: string) {
+    return this.deploymentsService.findRecentByTeam(teamId, limit ? parseInt(limit, 10) : 50);
   }
 
   @Get('project/:projectId')

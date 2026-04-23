@@ -20,11 +20,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   pipelines: {
-    recent: (limit = 50) => request<any[]>(`/pipelines/recent?limit=${limit}`),
+    recentByTeam: (teamId: string, limit = 50) =>
+      request<any[]>(`/pipelines/team/${teamId}/recent?limit=${limit}`),
     byProject: (projectId: string) => request<any[]>(`/pipelines/project/${projectId}`),
   },
   deployments: {
-    recent: (limit = 50) => request<any[]>(`/deployments/recent?limit=${limit}`),
+    recentByTeam: (teamId: string, limit = 50) =>
+      request<any[]>(`/deployments/team/${teamId}/recent?limit=${limit}`),
     byProject: (projectId: string) => request<any[]>(`/deployments/project/${projectId}`),
   },
   teams: {

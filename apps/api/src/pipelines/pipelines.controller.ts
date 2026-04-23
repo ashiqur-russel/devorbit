@@ -7,9 +7,9 @@ import { PipelinesService } from './pipelines.service';
 export class PipelinesController {
   constructor(private pipelinesService: PipelinesService) {}
 
-  @Get('recent')
-  findRecent(@Query('limit') limit?: string) {
-    return this.pipelinesService.findRecent([], limit ? parseInt(limit) : 50);
+  @Get('team/:teamId/recent')
+  findRecentByTeam(@Param('teamId') teamId: string, @Query('limit') limit?: string) {
+    return this.pipelinesService.findRecentByTeam(teamId, limit ? parseInt(limit, 10) : 50);
   }
 
   @Get('project/:projectId')

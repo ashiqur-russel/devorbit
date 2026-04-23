@@ -1158,8 +1158,8 @@
   <div class="endpoint-group-header">Pipelines &amp; Deployments</div>
   <div class="endpoint">
     <span class="method get">GET</span>
-    <span class="endpoint-path">/pipelines/recent?limit=50</span>
-    <span class="endpoint-desc">All recent pipeline runs</span>
+    <span class="endpoint-path">/pipelines/team/:teamId/recent?limit=50</span>
+    <span class="endpoint-desc">Recent pipeline runs for projects in a team</span>
   </div>
   <div class="endpoint">
     <span class="method get">GET</span>
@@ -1168,8 +1168,8 @@
   </div>
   <div class="endpoint">
     <span class="method get">GET</span>
-    <span class="endpoint-path">/deployments/recent?limit=50</span>
-    <span class="endpoint-desc">All recent deployments</span>
+    <span class="endpoint-path">/deployments/team/:teamId/recent?limit=50</span>
+    <span class="endpoint-desc">Recent deployments for projects in a team</span>
   </div>
   <div class="endpoint">
     <span class="method get">GET</span>
