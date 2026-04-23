@@ -40,9 +40,15 @@ jobs:
  
             # Report deployment from inside the VPS (avoids Nginx/public networking issues).
             if [ -n "${{ secrets.DEVORBIT_PROJECT_ID }}" ] && [ -n "${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" ]; then
-              echo "Waiting for API to accept connections on 127.0.0.1:4000…"
-              for i in $(seq 1 30); do
-                if curl -sS -o /dev/null "http://127.0.0.1:4000/api/v1/deployments/report" -X POST -H "Content-Type: application/json" --data '{}' 2>/dev/null; then
+              project_id="${{ secrets.DEVORBIT_PROJECT_ID }}"
+              if ! echo "$project_id" | grep -Eq '^[a-f0-9]{24}$'; then
+                echo "Invalid DEVORBIT_PROJECT_ID (expected 24-char hex Mongo ObjectId): $project_id"
+                exit 1
+              fi
+
+              echo "Waiting for API port 127.0.0.1:4000…"
+              for i in $(seq 1 45); do
+                if (echo > /dev/tcp/127.0.0.1/4000) >/dev/null 2>&1; then
                   break
                 fi
                 sleep 1
@@ -52,7 +58,7 @@ jobs:
                 -H "Content-Type: application/json" \
                 -H "x-devorbit-deploy-token: ${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" \
                 --data-binary "$(jq -nc \
-                  --arg projectId "${{ secrets.DEVORBIT_PROJECT_ID }}" \
+                  --arg projectId "$project_id" \
                   --arg platform "OVH" \
                   --arg status "success" \
                   --arg environment "production" \
@@ -63,6 +69,7 @@ jobs:
                 )" \
               )"
               echo "Devorbit report status: ${http_code}"
+              echo "Devorbit report body:"
               cat /tmp/devorbit-report.json || true
               if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
                 echo "Devorbit deployment report failed"
