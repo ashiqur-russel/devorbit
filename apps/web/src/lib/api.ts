@@ -19,6 +19,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  mail: {
+    status: () => request<{ provider: string; configured: boolean }>('/mail/status'),
+    sendTest: (to?: string) =>
+      request<{ id: string; to: string }>('/mail/test', {
+        method: 'POST',
+        body: JSON.stringify(to ? { to } : {}),
+      }),
+  },
   pipelines: {
     recentByTeam: (teamId: string, limit = 50) =>
       request<any[]>(`/pipelines/team/${teamId}/recent?limit=${limit}`),

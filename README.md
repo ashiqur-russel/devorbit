@@ -182,6 +182,18 @@ Connect third-party platforms under **Settings → Integrations**:
 
 ---
 
+## Transactional email (Resend, optional)
+
+For testing invites or notifications without running your own SMTP server, the API can send mail through **[Resend](https://resend.com)** (free tier).
+
+1. Create a Resend account and an **API key**.
+2. Set **`RESEND_API_KEY`** (and optionally **`MAIL_FROM`**) in `.env` — see `.env.example`. Default sender is `Devorbit <onboarding@resend.dev>` until you verify a domain.
+3. Sign in to Devorbit, open **Settings → Email (test)**, or call **`GET /api/v1/mail/status`** and **`POST /api/v1/mail/test`** with your **JWT** (Swagger: `http://localhost:4000/api`). The test endpoint sends to your GitHub email unless you pass `{ "to": "you@example.com" }`.
+
+Without a verified domain, Resend may only allow sending to addresses allowed on their free/test policy — check their dashboard if delivery fails.
+
+---
+
 ## API Docs
 
 Swagger UI is available at [http://localhost:4000/api](http://localhost:4000/api) when the API is running.

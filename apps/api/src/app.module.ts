@@ -12,6 +12,7 @@ import { WebsocketsModule } from './websockets/websockets.module';
 import { ProjectsModule } from './projects/projects.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { JobsModule } from './jobs/jobs.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { JobsModule } from './jobs/jobs.module';
     DeploymentsModule,
     WebsocketsModule,
     JobsModule,
+    MailModule,
   ],
 })
 export class AppModule {}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { getAgentInstallCommand } from '@/lib/agent-install-command';
@@ -31,6 +32,11 @@ export default function AgentSetupPage() {
         <h1 className="text-4xl font-black tracking-tighter font-headline text-on-surface">Agent Setup</h1>
         <p className="text-on-surface-variant text-sm mt-2 max-w-lg">
           Connect your local hardware or cloud infrastructure to DevOrbit. Deploying the lightweight agent enables real-time node orchestration and metrics piping.
+        </p>
+        <p className="mt-3 text-xs text-outline">
+          <Link href="/settings/email" className="font-bold text-primary underline hover:text-secondary">
+            Test transactional email (Resend)
+          </Link>
         </p>
       </div>
 
