@@ -40,9 +40,15 @@ jobs:
  
             # Report deployment from inside the VPS (avoids Nginx/public networking issues).
             if [ -n "${{ secrets.DEVORBIT_PROJECT_ID }}" ] && [ -n "${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" ]; then
-              project_id="${{ secrets.DEVORBIT_PROJECT_ID }}"
+              # Secrets can accidentally include trailing newlines; sanitize before use.
+              project_id="$(printf %s "${{ secrets.DEVORBIT_PROJECT_ID }}" | tr -d '\r\n')"
+              deploy_token="$(printf %s "${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" | tr -d '\r\n')"
               if ! echo "$project_id" | grep -Eq '^[a-f0-9]{24}$'; then
                 echo "Invalid DEVORBIT_PROJECT_ID (expected 24-char hex Mongo ObjectId): $project_id"
+                exit 1
+              fi
+              if [ -z "${deploy_token}" ]; then
+                echo "Invalid DEVORBIT_DEPLOY_TOKEN (empty after trimming newlines)"
                 exit 1
               fi
 
@@ -69,7 +75,7 @@ jobs:
 
               http_code="$(curl -sS -D /tmp/devorbit-report.headers -o /tmp/devorbit-report.body -w "%{http_code}" -X POST "http://127.0.0.1:4000/api/v1/deployments/report" \
                 -H "Content-Type: application/json" \
-                -H "x-devorbit-deploy-token: ${{ secrets.DEVORBIT_DEPLOY_TOKEN }}" \
+                -H "x-devorbit-deploy-token: ${deploy_token}" \
                 --data-binary "$payload" \
               )"
               echo "Devorbit report status: ${http_code}"
