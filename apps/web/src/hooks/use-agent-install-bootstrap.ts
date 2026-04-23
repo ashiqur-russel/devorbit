@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-
-const TEAM_KEY = 'devorbit_team_id';
+import { DEVORBIT_TEAM_ID_KEY } from './use-team-id';
 const AGENT_TOKEN_KEY = 'devorbit_agent_token';
 
 /**
@@ -52,7 +51,7 @@ export function useAgentInstallBootstrap() {
         }
 
         setTeamId(tid);
-        if (typeof window !== 'undefined') localStorage.setItem(TEAM_KEY, tid);
+        if (typeof window !== 'undefined') localStorage.setItem(DEVORBIT_TEAM_ID_KEY, tid);
 
         let list = await api.servers.byTeam(tid);
         if (cancelled) return;

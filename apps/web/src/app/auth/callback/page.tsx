@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { api } from '@/lib/api';
+import { DEVORBIT_TEAM_ID_KEY } from '@/hooks/use-team-id';
 
 function CallbackInner() {
   const router = useRouter();
@@ -10,12 +12,39 @@ function CallbackInner() {
 
   useEffect(() => {
     const token = params.get('token');
-    if (token) {
-      localStorage.setItem('devorbit_token', token);
-      router.replace('/onboarding/step-1');
-    } else {
+    if (!token) {
       router.replace('/login');
+      return;
     }
+
+    localStorage.setItem('devorbit_token', token);
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const teams = await api.teams.mine();
+        if (cancelled) return;
+        const list = Array.isArray(teams) ? teams : [];
+        const firstId = list[0]?._id ? String(list[0]._id) : '';
+
+        if (firstId) {
+          if (!cancelled) {
+            localStorage.setItem(DEVORBIT_TEAM_ID_KEY, firstId);
+            router.replace('/dashboard');
+          }
+          return;
+        }
+      } catch {
+        /* fall through to onboarding if API fails */
+      }
+
+      if (!cancelled) router.replace('/onboarding/step-1');
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [params, router]);
 
   return (

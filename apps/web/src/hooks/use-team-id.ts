@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-const TEAM_KEY = 'devorbit_team_id';
+/** Persisted default team after login / onboarding (used by dashboard and agent bootstrap). */
+export const DEVORBIT_TEAM_ID_KEY = 'devorbit_team_id';
 
 /** Resolves team id from localStorage or `GET /teams`. */
 export function useTeamId(): { teamId: string | null; loading: boolean } {
@@ -16,12 +17,12 @@ export function useTeamId(): { teamId: string | null; loading: boolean } {
     (async () => {
       try {
         setLoading(true);
-        let tid = typeof window !== 'undefined' ? localStorage.getItem(TEAM_KEY) : null;
+        let tid = typeof window !== 'undefined' ? localStorage.getItem(DEVORBIT_TEAM_ID_KEY) : null;
         if (!tid) {
           const teams = await api.teams.mine();
           if (cancelled) return;
           tid = teams[0]?._id ? String(teams[0]._id) : null;
-          if (tid && typeof window !== 'undefined') localStorage.setItem(TEAM_KEY, tid);
+          if (tid && typeof window !== 'undefined') localStorage.setItem(DEVORBIT_TEAM_ID_KEY, tid);
         }
         if (!cancelled) setTeamId(tid);
       } catch {
