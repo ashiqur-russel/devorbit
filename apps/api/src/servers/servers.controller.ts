@@ -2,11 +2,15 @@ import { Body, Controller, Get, NotFoundException, Param, Post, Req, UseGuards }
 import { AuthGuard } from '@nestjs/passport';
 import { Types } from 'mongoose';
 import { ServersService } from './servers.service';
+import { TeamsService } from '../teams/teams.service';
 
 @Controller('servers')
 @UseGuards(AuthGuard('jwt'))
 export class ServersController {
-  constructor(private serversService: ServersService) {}
+  constructor(
+    private serversService: ServersService,
+    private teamsService: TeamsService,
+  ) {}
 
   @Post()
   register(@Body() body: { teamId: string; name: string }, @Req() req: { user: { _id: Types.ObjectId } }) {
@@ -14,14 +18,16 @@ export class ServersController {
   }
 
   @Get('team/:teamId')
-  findByTeam(@Param('teamId') teamId: string) {
+  async findByTeam(@Param('teamId') teamId: string, @Req() req: { user: { _id: Types.ObjectId } }) {
+    await this.teamsService.assertCanAccessTeam(req.user._id.toString(), teamId);
     return this.serversService.findByTeam(teamId);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @Req() req: { user: { _id: Types.ObjectId } }) {
     const server = await this.serversService.findById(id);
     if (!server) throw new NotFoundException('Server not found');
+    await this.teamsService.assertCanAccessTeam(req.user._id.toString(), String(server.teamId));
     return server;
   }
 }

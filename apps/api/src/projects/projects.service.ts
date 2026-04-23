@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Project } from './project.schema';
 import { PipelineRun } from '../pipelines/pipeline.schema';
 import { Deployment } from '../deployments/deployment.schema';
+import { TeamsService } from '../teams/teams.service';
 
 @Injectable()
 export class ProjectsService {
@@ -11,6 +12,7 @@ export class ProjectsService {
     @InjectModel(Project.name) private projectModel: Model<Project>,
     @InjectModel(PipelineRun.name) private pipelineModel: Model<PipelineRun>,
     @InjectModel(Deployment.name) private deploymentModel: Model<Deployment>,
+    private teamsService: TeamsService,
   ) {}
 
   async create(data: Partial<Project>): Promise<Project> {
@@ -53,11 +55,26 @@ export class ProjectsService {
     return updated;
   }
 
+  async findActiveById(projectId: string): Promise<Project | null> {
+    return this.projectModel.findOne({ _id: new Types.ObjectId(projectId), deletedAt: { $exists: false } }).exec();
+  }
+
+  async findAnyById(projectId: string): Promise<Project | null> {
+    return this.projectModel.findById(new Types.ObjectId(projectId)).exec();
+  }
+
+  async assertCanAccessProject(userId: string, projectId: string): Promise<Project> {
+    const proj = await this.findActiveById(projectId);
+    if (!proj) throw new NotFoundException('Project not found');
+    await this.teamsService.assertCanAccessTeam(userId, proj.teamId.toString());
+    return proj;
+  }
+
   async remove(projectId: string, opts?: { cascade?: boolean }): Promise<{ ok: true }> {
     const id = new Types.ObjectId(projectId);
     const cascade = Boolean(opts?.cascade);
 
-    const exists = await this.projectModel.exists({ _id: id });
+    const exists = await this.projectModel.findById(id);
     if (!exists) throw new NotFoundException('Project not found');
 
     if (cascade) {

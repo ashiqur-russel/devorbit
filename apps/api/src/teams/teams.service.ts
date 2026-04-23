@@ -53,4 +53,27 @@ export class TeamsService {
   async findById(id: string): Promise<Team | null> {
     return this.teamModel.findById(id);
   }
+
+  /**
+   * Authorization: user may access team-scoped resources if they are either:
+   * - a member of the team, OR
+   * - a member of the parent organization (super admin/admin/member), when the team is linked to an org
+   */
+  async assertCanAccessTeam(userId: string, teamId: string): Promise<Team> {
+    const tid = new Types.ObjectId(teamId);
+    const uid = new Types.ObjectId(userId);
+
+    const team = await this.teamModel.findById(tid);
+    if (!team) throw new NotFoundException('Team not found');
+
+    const isTeamMember = (team.members || []).some((m) => m.userId?.equals(uid));
+    if (isTeamMember) return team;
+
+    if (team.organizationId) {
+      const orgMember = await this.orgModel.exists({ _id: team.organizationId, 'members.userId': uid });
+      if (orgMember) return team;
+    }
+
+    throw new ForbiddenException('You do not have access to this team');
+  }
 }

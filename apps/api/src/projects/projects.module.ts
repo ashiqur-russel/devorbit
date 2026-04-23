@@ -5,6 +5,7 @@ import { ProjectsService } from './projects.service';
 import { ProjectsController } from './projects.controller';
 import { PipelineRun, PipelineRunSchema } from '../pipelines/pipeline.schema';
 import { Deployment, DeploymentSchema } from '../deployments/deployment.schema';
+import { TeamsModule } from '../teams/teams.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { Deployment, DeploymentSchema } from '../deployments/deployment.schema';
       { name: PipelineRun.name, schema: PipelineRunSchema },
       { name: Deployment.name, schema: DeploymentSchema },
     ]),
+    TeamsModule,
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService],
