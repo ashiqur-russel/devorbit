@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -13,6 +14,8 @@ import { ServersService } from '../servers/servers.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MetricsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(MetricsGateway.name);
+
   @WebSocketServer()
   server: Server;
 
@@ -37,7 +40,9 @@ export class MetricsGateway implements OnGatewayConnection, OnGatewayDisconnect 
     for (const [serverId, socketId] of this.agentSockets.entries()) {
       if (socketId === client.id) {
         this.agentSockets.delete(serverId);
-        await this.serversService.markOffline(serverId);
+        /** Do not mark offline here: API restarts and transient network drops would flip customer UIs.
+         *  Stale detection uses `lastSeen` (updated on connect + metrics) in `ServersStaleService`. */
+        this.logger.debug(`Agent socket disconnected for server ${serverId} (socket ${client.id})`);
         break;
       }
     }

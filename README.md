@@ -57,6 +57,8 @@ Copy `.env.example` to `.env` and set the following:
 
 | Variable | Description |
 |---|---|
+| `AGENT_OFFLINE_AFTER_MS` | *(API)* No heartbeat (`lastSeen`) for this long ⇒ server **`offline`** (default **180000** = 3 min). Avoids “offline” on every API restart or socket blip while the agent is still running. |
+| `AGENT_STALE_CHECK_INTERVAL_MS` | *(API)* How often to run stale checks in ms (default **60000**). |
 | `JWT_SECRET` | Long random string for signing JWTs |
 | `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |

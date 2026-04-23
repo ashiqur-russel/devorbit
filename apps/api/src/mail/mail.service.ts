@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
+/** CJS-safe: default import can be undefined at runtime without `esModuleInterop`. */
+import nodemailer = require('nodemailer');
 
 const RESEND_API = 'https://api.resend.com/emails';
 
