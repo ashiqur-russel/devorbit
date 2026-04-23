@@ -2,8 +2,26 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { IntegrationsService } from '../integrations/integrations.service';
 import { ProjectsService } from '../projects/projects.service';
 import { PipelinesService } from '../pipelines/pipelines.service';
+import { Types } from 'mongoose';
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
+
+type ProjectWithRepo = {
+  _id: Types.ObjectId;
+  repoOwner: string;
+  repoName: string;
+};
+
+type GitHubWorkflowRun = {
+  id: number;
+  head_branch?: string;
+  name?: string;
+  status?: string;
+  conclusion?: string | null;
+  updated_at?: string;
+  run_started_at?: string;
+  triggering_actor?: { login?: string };
+};
 
 @Injectable()
 export class GithubPollerService implements OnModuleInit, OnModuleDestroy {
@@ -38,7 +56,7 @@ export class GithubPollerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async fetchRuns(project: any, token: string) {
+  private async fetchRuns(project: ProjectWithRepo, token: string) {
     try {
       const url = `https://api.github.com/repos/${project.repoOwner}/${project.repoName}/actions/runs?per_page=20`;
       const res = await fetch(url, {
@@ -56,8 +74,8 @@ export class GithubPollerService implements OnModuleInit, OnModuleDestroy {
         );
         return;
       }
-      const data = (await res.json()) as { workflow_runs: any[] };
-      for (const run of data.workflow_runs) {
+      const data = (await res.json()) as { workflow_runs?: GitHubWorkflowRun[] };
+      for (const run of data.workflow_runs ?? []) {
         await this.pipelinesService.upsertRun({
           projectId: project._id,
           provider: 'GITHUB',

@@ -2,8 +2,22 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { IntegrationsService } from '../integrations/integrations.service';
 import { ProjectsService } from '../projects/projects.service';
 import { DeploymentsService } from '../deployments/deployments.service';
+import { Types } from 'mongoose';
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
+
+type ProjectWithVercel = {
+  _id: Types.ObjectId;
+  teamId: Types.ObjectId;
+  vercelProjectId: string;
+};
+
+type VercelDeployment = {
+  state?: string;
+  url?: string;
+  projectId?: string;
+  createdAt?: number;
+};
 
 @Injectable()
 export class VercelPollerService implements OnModuleInit, OnModuleDestroy {
@@ -35,7 +49,7 @@ export class VercelPollerService implements OnModuleInit, OnModuleDestroy {
   private async fetchDeployments(teamId: string, token: string) {
     try {
       const teamProjects = await this.projectsService.findAllWithVercel();
-      const filtered = teamProjects.filter((p) => p.teamId.toString() === teamId);
+      const filtered = (teamProjects as ProjectWithVercel[]).filter((p) => p.teamId.toString() === teamId);
       if (!filtered.length) return;
 
       const res = await fetch('https://api.vercel.com/v6/deployments?limit=20', {
@@ -45,8 +59,8 @@ export class VercelPollerService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(`Vercel API ${res.status} for team ${teamId}`);
         return;
       }
-      const data = (await res.json()) as { deployments: any[] };
-      for (const dep of data.deployments) {
+      const data = (await res.json()) as { deployments?: VercelDeployment[] };
+      for (const dep of data.deployments ?? []) {
         const project = filtered.find((p) => p.vercelProjectId === dep.projectId);
         if (!project) continue;
         await this.deploymentsService.upsert({

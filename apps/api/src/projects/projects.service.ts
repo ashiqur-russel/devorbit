@@ -16,7 +16,7 @@ export class ProjectsService {
   ) {}
 
   async create(data: Partial<Project>): Promise<Project> {
-    return this.projectModel.create(data as any);
+    return this.projectModel.create(data as unknown as Project);
   }
 
   async findByTeam(teamId: string): Promise<Project[]> {
