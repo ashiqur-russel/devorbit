@@ -100,6 +100,16 @@ Some clouds only allow **22, 80, 443** from the internet. Your Amuvee runbooks o
 
 **Troubleshooting GitHub login (`Failed to obtain access token`, `EHOSTUNREACH` from inside the API container):** some VPS providers block outbound internet from Docker’s default bridge. The compose file runs the **API** with `network_mode: host` so OAuth can reach GitHub; Mongo/Redis stay on the bridge and are reached via `127.0.0.1` published ports.
 
+### Production deploy (GitHub Actions, semi-automated)
+
+The **Deploy to VPS** workflow (`.github/workflows/deploy-vps.yml`) runs after **CI succeeds on a push to `main`**, but the deploy job is tied to the **`production`** GitHub Environment so you can require a human click before SSH runs.
+
+1. In the repo: **Settings → Environments → New environment** → name **`production`**.
+2. Under **Deployment protection rules**, enable **Required reviewers** and add yourself (or a team).
+3. After each green **CI** run on `main`, open **Actions**, find the pending **Deploy to VPS** run, then **Review deployments → Approve and deploy**.
+
+You can still start a deploy anytime from **Actions → Deploy to VPS → Run workflow** (`workflow_dispatch`). If the `production` environment has no protection rules, the job runs immediately.
+
 ---
 
 ## Monorepo Structure

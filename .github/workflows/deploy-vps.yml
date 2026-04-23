@@ -1,3 +1,14 @@
+# Semi-automated CD (recommended):
+#   1) Push to main → CI runs.
+#   2) On successful CI (push to main), this workflow is queued; the deploy job
+#      waits on the GitHub Environment "production" until someone approves
+#      (Actions → pending deployment → Review deployments → Approve and deploy).
+#   3) Or run manually: Actions → "Deploy to VPS" → Run workflow.
+#
+# One-time setup: GitHub → Settings → Environments → Create "production" (if missing)
+#   → Required reviewers (add you / your team). Optional: restrict deployment branch to main.
+#
+# If "production" has no protection rules, the job runs immediately (same as before).
 name: Deploy to VPS
 
 on:
@@ -8,12 +19,13 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-vps-${{ github.ref }}
-  cancel-in-progress: true
+  group: deploy-vps-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
     timeout-minutes: 20
     # Only after green CI on main from a real push (not pull_request), or manual dispatch.
     if: >-
