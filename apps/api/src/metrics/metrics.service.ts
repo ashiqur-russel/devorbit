@@ -22,9 +22,10 @@ export class MetricsService {
       .sort({ timestamp: 1 });
   }
 
-  async getLatest(serverId: string): Promise<ServerMetric> {
+  async getLatest(serverId: string): Promise<ServerMetric | null> {
     return this.metricModel
       .findOne({ 'metadata.serverId': new Types.ObjectId(serverId) })
-      .sort({ timestamp: -1 });
+      .sort({ timestamp: -1 })
+      .exec();
   }
 }

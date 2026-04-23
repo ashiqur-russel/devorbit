@@ -17,6 +17,10 @@ export class ServersService {
     return this.serverModel.find({ teamId });
   }
 
+  async findById(id: string): Promise<Server | null> {
+    return this.serverModel.findById(id).exec();
+  }
+
   async findByAgentToken(token: string): Promise<Server> {
     return this.serverModel.findOne({ agentToken: token });
   }

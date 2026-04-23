@@ -34,6 +34,7 @@ export const api = {
   },
   servers: {
     byTeam: (teamId: string) => request<any[]>(`/servers/team/${teamId}`),
+    get: (id: string) => request<any>(`/servers/${id}`),
     register: (teamId: string, name: string) =>
       request<any>('/servers', { method: 'POST', body: JSON.stringify({ teamId, name }) }),
   },
